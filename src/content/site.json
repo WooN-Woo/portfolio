@@ -1,0 +1,166 @@
+{
+  "profile": {
+    "name": "Yiğit Eren Büyükbaş",
+    "role": "Oyun geliştirici",
+    "location": "Ataşehir, İstanbul",
+    "email": "erenbykbs@gmail.com",
+    "emailAlt": "yigitbuyukbas@stu.aydin.edu.tr",
+    "phone": "+90 507 855 6257",
+    "github": "https://github.com/WooN-Woo",
+    "githubLabel": "github.com/WooN-Woo",
+    "site": "",
+    "siteLabel": "",
+    "headline": "Oyunların çalışan\nkısmını kuruyorum.",
+    "intro": "İstanbul Aydın Üniversitesi Dijital Oyun Tasarımı bölümünde son sınıf öğrencisiyim. Unity ve C# ile oynanış mekanikleri, çekirdek sistemler ve oyun içi ekonomi kuruyorum; aynı işi mobil tarafta Swift ile yapıyorum. Hızlı prototip çıkarmayı ve bir sistemi baştan sona çalışır hâle getirmeyi seviyorum.",
+    "goal": "Oyun geliştirme tarafında ağırlıklı deneyim kazanabileceğim, dijital projelerde üretime katkı verebileceğim bir staj arıyorum. Öğrenmeye açığım ve ekibe değer katacak şekilde kendimi geliştirmeye istekliyim.",
+    "now": "Şu an: Dustbound Railroad'ın tren sistemleri",
+    "metaDescription": "Yiğit Eren Büyükbaş — Unity ve C# ile oynanış mekanikleri ve çekirdek sistemler kuran oyun geliştirici. Oyunlar, projeler ve CV."
+  },
+  "games": [
+    {
+      "slug": "dustbound-railroad",
+      "title": "Dustbound Railroad",
+      "year": "2025 — devam ediyor",
+      "role": "Geliştirici",
+      "engine": "Unity · C#",
+      "status": "Arşiv",
+      "tagline": "Birinci şahıs Western tren yönetimi ve ticaret oyunu.",
+      "detail": [
+        "Gerçek zamanlı sistem yönetimi, FPS mekanikleri ve dinamik bir oyun içi ekonomiyi bir araya getiren birinci şahıs bir Western oyunu. Oyuncu treni ayakta tutarken hattaki ticareti de yönetiyor.",
+        "Projede geliştirici olarak yer alıyorum; trenin çekirdek sistemlerini ve aksiyon tarafındaki oynanış mekaniklerini Unity ve C# ile kuruyorum."
+      ],
+      "tags": [
+        "Oynanış mekanikleri",
+        "Sistem tasarımı",
+        "FPS",
+        "Ekonomi"
+      ],
+      "cover": "",
+      "links": []
+    }
+  ],
+  "projects": [
+    {
+      "slug": "ogot",
+      "title": "OGOT",
+      "year": "2025 — devam ediyor",
+      "role": "Tek geliştirici",
+      "status": "Geliştiriliyor",
+      "summary": "Ürünlerin barkod ve etiket yazıcısıyla takip edildiği mobil stok yönetimi uygulaması.",
+      "detail": [
+        "Kullanıcının ürünleri barkoddan okutup takip ettiği, raf etiketini doğrudan uygulamadan bastığı bir iOS uygulaması. Projenin tamamını tek başıma geliştiriyorum.",
+        "Swift ve SwiftUI ile çekirdek sistemleri ve kullanıcı deneyimini kurdum; güvenli oturum açma ve gerçek depo akışına oturan, büyümeye açık bir uygulama mimarisi tasarladım."
+      ],
+      "stack": [
+        "Swift",
+        "SwiftUI",
+        "Xcode",
+        "Supabase"
+      ],
+      "links": []
+    },
+    {
+      "slug": "original-otomotiv",
+      "title": "Original Otomotiv",
+      "year": "2026",
+      "role": "Tasarım, geliştirme, altyapı",
+      "status": "Yayında",
+      "summary": "Yedek parça satışı için çok kullanıcılı web platformu: vitrin, üye paneli ve yönetim tarafı tek sistemde.",
+      "detail": [
+        "Ziyaretçinin ürünü bulduğu vitrin, satıcının ilanlarını yönettiği üye paneli ve platformun işletildiği yönetim arayüzü tek kod tabanında çalışıyor. Kullanıcı rolleri ve veri erişimi veritabanı seviyesinde ayrılmış durumda.",
+        "Arama, kategori ağacı, ilan yönetimi, üyelik ve iki adımlı doğrulama sıfırdan kuruldu."
+      ],
+      "stack": [
+        "Next.js",
+        "TypeScript",
+        "Supabase",
+        "PostgreSQL"
+      ],
+      "links": [
+        {
+          "label": "originalotomotiv.com",
+          "href": "https://originalotomotiv.com"
+        }
+      ]
+    },
+    {
+      "slug": "rsvp",
+      "title": "RSVP Okuyucu",
+      "year": "2025",
+      "role": "Kişisel araç",
+      "status": "Arşiv",
+      "summary": "Metni kelime kelime tek noktada gösteren, hızlı okuma için yazılmış küçük bir araç.",
+      "detail": [
+        "Uzun metinleri gözü satır aramaktan kurtaracak şekilde tek bir sabit noktada akıtan bir okuyucu. Kendi ihtiyacım için yazıldı."
+      ],
+      "stack": [
+        "Python",
+        "HTML"
+      ],
+      "links": []
+    }
+  ],
+  "experience": [],
+  "education": [
+    {
+      "period": "2022 — 2026",
+      "title": "Dijital Oyun Tasarımı, Lisans",
+      "org": "İstanbul Aydın Üniversitesi",
+      "description": ""
+    }
+  ],
+  "skills": [
+    {
+      "title": "Oyun geliştirme",
+      "items": [
+        "Oynanış mekanikleri",
+        "Çekirdek sistem tasarımı",
+        "Hızlı prototipleme",
+        "2D ve 3D oyun geliştirme"
+      ]
+    },
+    {
+      "title": "Programlama",
+      "items": [
+        "C#",
+        "Swift",
+        "SwiftUI",
+        "VBA (temel)"
+      ]
+    },
+    {
+      "title": "Araçlar",
+      "items": [
+        "Unity",
+        "Xcode",
+        "Photoshop",
+        "After Effects",
+        "Premiere Pro",
+        "WordPress"
+      ]
+    },
+    {
+      "title": "Ekip",
+      "items": [
+        "Sözlü ve yazılı iletişim",
+        "Çok disiplinli ekiplerde çalışma",
+        "İş birliği"
+      ]
+    }
+  ],
+  "languages": [
+    {
+      "name": "Türkçe",
+      "level": "Ana dil"
+    },
+    {
+      "name": "İngilizce",
+      "level": "İleri seviye"
+    }
+  ],
+  "hobbies": [
+    "Yüzme",
+    "Boulder",
+    "Doğa yürüyüşü"
+  ]
+}
