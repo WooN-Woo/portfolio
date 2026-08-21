@@ -22,7 +22,7 @@
       "year": "2025 — devam ediyor",
       "role": "Geliştirici",
       "engine": "Unity · C#",
-      "status": "Arşiv",
+      "status": "Geliştiriliyor",
       "tagline": "Birinci şahıs Western tren yönetimi ve ticaret oyunu.",
       "detail": [
         "Gerçek zamanlı sistem yönetimi, FPS mekanikleri ve dinamik bir oyun içi ekonomiyi bir araya getiren birinci şahıs bir Western oyunu. Oyuncu treni ayakta tutarken hattaki ticareti de yönetiyor.",
@@ -33,6 +33,28 @@
         "Sistem tasarımı",
         "FPS",
         "Ekonomi"
+      ],
+      "cover": "",
+      "links": []
+    },
+    {
+      "slug": "coffesim",
+      "title": "CoffeSim",
+      "year": "2025",
+      "role": "Tek geliştirici",
+      "engine": "Unity · C#",
+      "status": "Tamamlandı",
+      "tagline": "Kahve dükkânı işletme oyunu: siparişi hazırla, kazan, tezgâhını büyüt.",
+      "detail": [
+        "Oyuncu espresso, çay ve soğuk içecek makinelerini kullanarak siparişleri hazırlıyor; kazandığı parayla markete gidip makinelerini yükseltiyor. Para, makine seviyeleri ve ilerleme kayıt altında tutuluyor, oyundan çıkıp dönünce kaldığın yerden devam ediyorsun.",
+        "Oyunun tamamını tek başıma yaptım: içecek hazırlama mekanikleri, ekonomi ve market sistemi, kayıt yönetimi, menüler ve ses. Dükkânı soyan hırsız ve şansını denediğin kumar sahnesi gibi ekonomiyi riskli hâle getiren parçalar da var."
+      ],
+      "tags": [
+        "Ekonomi ve market sistemi",
+        "Kayıt sistemi",
+        "Oynanış mekanikleri",
+        "Arayüz",
+        "Ses"
       ],
       "cover": "",
       "links": []

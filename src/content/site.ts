@@ -18,7 +18,7 @@ export type Project = {
   summary: string;
   detail: string[];
   stack: string[];
-  status?: "Yayında" | "Geliştiriliyor" | "Arşiv" | "";
+  status?: "Yayında" | "Geliştiriliyor" | "Tamamlandı" | "Arşiv" | "";
   links?: { label: string; href: string }[];
 };
 
@@ -33,7 +33,7 @@ export type Game = {
   tags: string[];
   /** public/ altındaki kapak görselinin yolu. Boşsa yazıdan bir kapak üretilir. */
   cover?: string;
-  status?: "Yayında" | "Geliştiriliyor" | "Arşiv" | "";
+  status?: "Yayında" | "Geliştiriliyor" | "Tamamlandı" | "Arşiv" | "";
   links?: { label: string; href: string }[];
 };
 
