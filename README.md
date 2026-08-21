@@ -1,6 +1,6 @@
-# Kişisel site — Yiğit Eren
+# Kişisel site — Yiğit Eren Büyükbaş
 
-Portfolyo ve CV. Next.js 16, statik çıktı, sunucu gerektirmez.
+Kişisel portfolyo. Next.js 16, statik çıktı, sunucu gerektirmez.
 
 ## Çalıştırma
 
@@ -13,17 +13,16 @@ npm run build    # out/ klasörüne statik site üretir
 ## İçerik nasıl değişir
 
 `npm run dev` çalışırken **http://localhost:3000/duzenle** adresini aç. Menüde de
-"İçerik" bağlantısı çıkar. Panelde altı sekme var:
+"İçerik" bağlantısı çıkar. Panelde şu sekmeler var:
 
 | Sekme | Ne yapar |
 |---|---|
-| Profil | Ad, unvan, iletişim, ana sayfadaki büyük cümle, tanıtım, CV hedef metni, durum satırı |
+| Profil | Ad, unvan, iletişim, ana sayfadaki büyük cümle, tanıtım, durum satırı |
 | Oyunlar | Oyun ekle/sil, sırala; kapak görseli, ad, yıl, rol, motor, durum, açıklama, bağlantılar |
 | Projeler | Oyun dışı işler; ad, yıl, rol, durum, açıklama, kullanılanlar, bağlantılar |
 | Deneyim | İş geçmişi — boşsa bölüm sitede hiç görünmez |
 | Eğitim | Okul bilgileri |
 | Yetkinlikler | Başlık grupları ve maddeleri |
-| Diller ve ilgi alanları | Dil, seviye ve hobiler |
 
 **Kapak görseli**: Oyunlar sekmesinde "Görsel seç" ile bilgisayarından seçiyorsun; dosya
 `public/oyunlar/` klasörüne kopyalanıyor ve oyuna bağlanıyor. png, jpg, webp ve gif kabul
@@ -45,23 +44,20 @@ Hepsi `src/app/globals.css` en üstteki `:root` bloğunda. Bir değeri değişti
 baştan aşağı ona uyar. Karanlık tema hemen altındaki blokta, ziyaretçinin sistem
 ayarına göre kendiliğinden açılıyor.
 
-## CV
-
-`/cv` sayfası ekranda da yazdırmada da aynı içeriği gösteriyor. "Yazdır / PDF olarak
-kaydet" düğmesi tarayıcının yazdırma penceresini açar; oradan **PDF olarak kaydet**
-seçilince A4 çıktı alınır. Menü, alt bilgi ve düğmenin kendisi çıktıya girmez.
-
 ## Yayına alma
 
-`npm run build` sonrası `out/` klasörü hazır statik sitedir; herhangi bir yere
-konabilir. Vercel'e almak için depoyu bağlaman yeterli, ek ayar gerekmiyor.
+Cloudflare Pages'e bağlı: `main` dalına push ettiğin an kendiliğinden yayınlanır.
+Build komutu **`npm run build`**, çıktı klasörü **`out`**. Build komutunu değiştirme —
+`npx next build` kullanılırsa düzenleme paneli de yayına çıkar.
+
+`out/` klasörü hazır statik sitedir; istersen başka bir yere de koyabilirsin.
 
 ## Dosya düzeni
 
 ```
 src/content/site.json     bütün içerik burada
 src/content/site.ts       içeriğin tipleri
-src/app/                  sayfalar: / , /cv , /duzenle
+src/app/                  sayfalar: / , /duzenle
 src/components/           arayüz parçaları + düzenleme paneli
 src/app/globals.css       renkler, yazı tipleri, bütün stiller
 tools/editor.mjs          panelin kaydet düğmesini karşılayan yerel araç

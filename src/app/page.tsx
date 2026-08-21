@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Footer, Nav } from "@/components/Chrome";
 import { GameShowcase } from "@/components/GameShowcase";
 import { Reveal } from "@/components/Reveal";
@@ -44,9 +43,9 @@ export default function Home() {
             className="hero-actions giris"
             style={gecikme(210 + basliklar.length * 110)}
           >
-            <Link className="btn btn-solid" href="/cv">
-              CV&apos;yi gör
-            </Link>
+            <a className="btn btn-solid" href="#oyunlar">
+              Oyunlara bak
+            </a>
             <a className="btn" href={`mailto:${profile.email}`}>
               E-posta gönder
             </a>
