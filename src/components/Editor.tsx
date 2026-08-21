@@ -584,6 +584,7 @@ export function Editor({ baslangic }: { baslangic: SiteContent }) {
                       <option value="">Belirtme</option>
                       <option value="Yayında">Yayında</option>
                       <option value="Geliştiriliyor">Geliştiriliyor</option>
+                      <option value="Tamamlandı">Tamamlandı</option>
                       <option value="Arşiv">Arşiv</option>
                     </select>
                   </Alan>
@@ -756,6 +757,7 @@ export function Editor({ baslangic }: { baslangic: SiteContent }) {
                       <option value="">Belirtme</option>
                       <option value="Yayında">Yayında</option>
                       <option value="Geliştiriliyor">Geliştiriliyor</option>
+                      <option value="Tamamlandı">Tamamlandı</option>
                       <option value="Arşiv">Arşiv</option>
                     </select>
                   </Alan>
