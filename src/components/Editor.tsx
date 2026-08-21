@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import type {
   ExperienceItem,
   Game,
-  Language,
   Project,
   SiteContent,
   SkillGroup,
@@ -20,7 +19,6 @@ const SEKMELER = [
   { id: "deneyim", ad: "Deneyim" },
   { id: "egitim", ad: "Eğitim" },
   { id: "yetkinlik", ad: "Yetkinlikler" },
-  { id: "diller", ad: "Diller ve ilgi alanları" },
 ] as const;
 
 type Sekme = (typeof SEKMELER)[number]["id"];
@@ -462,16 +460,6 @@ export function Editor({ baslangic }: { baslangic: SiteContent }) {
                 deger={veri.profile.intro}
                 onDegis={(v) =>
                   setVeri({ ...veri, profile: { ...veri.profile, intro: v } })
-                }
-              />
-            </Alan>
-
-            <Alan etiket="CV'deki hedef metni">
-              <CokSatir
-                satir={4}
-                deger={veri.profile.goal}
-                onDegis={(v) =>
-                  setVeri({ ...veri, profile: { ...veri.profile, goal: v } })
                 }
               />
             </Alan>
@@ -927,69 +915,6 @@ export function Editor({ baslangic }: { baslangic: SiteContent }) {
             >
               Başlık ekle
             </button>
-          </>
-        ) : null}
-
-        {sekme === "diller" ? (
-          <>
-            <div className="ed-kart">
-              {veri.languages.map((dil, sira) => (
-                <div className="ed-baglanti" key={sira}>
-                  <Metin
-                    deger={dil.name}
-                    placeholder="Dil"
-                    onDegis={(v) =>
-                      listeyiDegistir("languages", (liste) =>
-                        liste.map((d, i) => (i === sira ? { ...d, name: v } : d)),
-                      )
-                    }
-                  />
-                  <Metin
-                    deger={dil.level}
-                    placeholder="Seviye"
-                    onDegis={(v) =>
-                      listeyiDegistir("languages", (liste) =>
-                        liste.map((d, i) => (i === sira ? { ...d, level: v } : d)),
-                      )
-                    }
-                  />
-                  <button
-                    type="button"
-                    className="ed-mini ed-mini-sil"
-                    onClick={() =>
-                      listeyiDegistir("languages", (liste) =>
-                        liste.filter((_, i) => i !== sira),
-                      )
-                    }
-                  >
-                    Sil
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              className="btn ed-ekle"
-              onClick={() =>
-                listeyiDegistir("languages", (liste) => [
-                  ...liste,
-                  { name: "", level: "" } satisfies Language,
-                ])
-              }
-            >
-              Dil ekle
-            </button>
-
-            <div className="ed-kart">
-              <Alan etiket="İlgi alanları" ipucu="Her satıra bir tane.">
-                <CokSatir
-                  satir={5}
-                  deger={veri.hobbies.join("\n")}
-                  onDegis={(v) => setVeri({ ...veri, hobbies: satirlar(v) })}
-                />
-              </Alan>
-            </div>
           </>
         ) : null}
       </main>

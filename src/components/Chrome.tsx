@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { profile } from "@/content/site";
 
-export function Nav({ variant = "home" }: { variant?: "home" | "cv" }) {
+export function Nav() {
   return (
     <nav className="nav">
       <span className="ilerleme" aria-hidden="true" />
@@ -11,31 +11,23 @@ export function Nav({ variant = "home" }: { variant?: "home" | "cv" }) {
         </Link>
 
         <div className="nav-links">
-          {variant === "home" ? (
-            <>
-              <a className="nav-link" href="#oyunlar">
-                Oyunlar
-              </a>
-              <a className="nav-link nav-link-optional" href="#calismalar">
-                Çalışmalar
-              </a>
-              <a className="nav-link nav-link-optional" href="#iletisim">
-                İletişim
-              </a>
-              <Link className="nav-link nav-link-strong" href="/cv">
-                CV
-              </Link>
-              {process.env.NODE_ENV === "development" ? (
-                <Link className="nav-link nav-link-strong" href="/duzenle">
-                  İçerik
-                </Link>
-              ) : null}
-            </>
-          ) : (
-            <Link className="nav-link nav-link-strong" href="/">
-              Ana sayfa
+          <a className="nav-link" href="#oyunlar">
+            Oyunlar
+          </a>
+          <a className="nav-link nav-link-optional" href="#calismalar">
+            Çalışmalar
+          </a>
+          <a className="nav-link nav-link-optional" href="#egitim">
+            Eğitim
+          </a>
+          <a className="nav-link nav-link-strong" href="#iletisim">
+            İletişim
+          </a>
+          {process.env.NODE_ENV === "development" ? (
+            <Link className="nav-link nav-link-strong" href="/duzenle">
+              İçerik
             </Link>
-          )}
+          ) : null}
         </div>
       </div>
     </nav>

@@ -49,11 +49,6 @@ export type SkillGroup = {
   items: string[];
 };
 
-export type Language = {
-  name: string;
-  level: string;
-};
-
 export type Profile = {
   name: string;
   role: string;
@@ -67,7 +62,6 @@ export type Profile = {
   phone: string;
   headline: string;
   intro: string;
-  goal: string;
   now: string;
   metaDescription: string;
 };
@@ -79,8 +73,6 @@ export type SiteContent = {
   experience: ExperienceItem[];
   education: ExperienceItem[];
   skills: SkillGroup[];
-  languages: Language[];
-  hobbies: string[];
 };
 
 export const content = data as SiteContent;
@@ -88,8 +80,6 @@ export const content = data as SiteContent;
 export const profile = content.profile;
 export const games = content.games;
 export const projects = content.projects;
-export const hobbies = content.hobbies;
 export const experience = content.experience;
 export const education = content.education;
 export const skills = content.skills;
-export const languages = content.languages;

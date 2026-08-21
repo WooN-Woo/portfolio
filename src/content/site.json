@@ -12,7 +12,6 @@
     "siteLabel": "",
     "headline": "Oyunların çalışan\nkısmını kuruyorum.",
     "intro": "İstanbul Aydın Üniversitesi Dijital Oyun Tasarımı bölümünde son sınıf öğrencisiyim. Unity ve C# ile oynanış mekanikleri, çekirdek sistemler ve oyun içi ekonomi kuruyorum; aynı işi mobil tarafta Swift ile yapıyorum. Hızlı prototip çıkarmayı ve bir sistemi baştan sona çalışır hâle getirmeyi seviyorum.",
-    "goal": "Oyun geliştirme tarafında ağırlıklı deneyim kazanabileceğim, dijital projelerde üretime katkı verebileceğim bir staj arıyorum. Öğrenmeye açığım ve ekibe değer katacak şekilde kendimi geliştirmeye istekliyim.",
     "now": "Şu an: Dustbound Railroad'ın tren sistemleri",
     "metaDescription": "Yiğit Eren Büyükbaş — Unity ve C# ile oynanış mekanikleri ve çekirdek sistemler kuran oyun geliştirici. Oyunlar, projeler ve CV."
   },
@@ -107,6 +106,12 @@
       "title": "Dijital Oyun Tasarımı, Lisans",
       "org": "İstanbul Aydın Üniversitesi",
       "description": ""
+    },
+    {
+      "period": "2018-2022",
+      "title": "",
+      "org": "Hayrullah Kefoğlu Anadolu Lisesi",
+      "description": ""
     }
   ],
   "skills": [
@@ -147,20 +152,5 @@
         "İş birliği"
       ]
     }
-  ],
-  "languages": [
-    {
-      "name": "Türkçe",
-      "level": "Ana dil"
-    },
-    {
-      "name": "İngilizce",
-      "level": "İleri seviye"
-    }
-  ],
-  "hobbies": [
-    "Yüzme",
-    "Boulder",
-    "Doğa yürüyüşü"
   ]
 }

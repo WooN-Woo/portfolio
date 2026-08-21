@@ -52,8 +52,6 @@ function dogrula(veri) {
   dizi("experience");
   dizi("education");
   dizi("skills");
-  dizi("languages");
-  dizi("hobbies");
 
   if (Array.isArray(veri.games)) {
     veri.games.forEach((oyun, i) => {
