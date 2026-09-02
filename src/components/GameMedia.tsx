@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { varlik } from "@/lib/varlik";
 import { youtubeKimlik } from "@/lib/video";
 
 /**
@@ -19,8 +20,11 @@ export function GameMedia({
   const [oynuyor, setOynuyor] = useState(false);
   const kimlik = youtubeKimlik(video ?? "");
 
-  const kapak =
-    cover || (kimlik ? `https://i.ytimg.com/vi/${kimlik}/hqdefault.jpg` : "");
+  const kapak = cover
+    ? varlik(cover)
+    : kimlik
+      ? `https://i.ytimg.com/vi/${kimlik}/hqdefault.jpg`
+      : "";
 
   if (kimlik && oynuyor) {
     return (
