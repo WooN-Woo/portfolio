@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node tools/dev.mjs",
-    "dev:site": "next dev",
+    "yayinla": "node tools/yayinla.mjs",
     "build": "next build && rm -rf out/duzenle",
     "start": "next start",
     "lint": "eslint"

@@ -6,13 +6,13 @@ Kişisel portfolyo. Next.js 16, statik çıktı, sunucu gerektirmez.
 
 ```bash
 npm install
-npm run dev      # http://localhost:3000
+npm run dev      # http://localhost:4300
 npm run build    # out/ klasörüne statik site üretir
 ```
 
 ## İçerik nasıl değişir
 
-`npm run dev` çalışırken **http://localhost:3000/duzenle** adresini aç. Menüde de
+`npm run dev` çalışırken **http://localhost:4300/duzenle** adresini aç. Menüde de
 "İçerik" bağlantısı çıkar. Panelde şu sekmeler var:
 
 | Sekme | Ne yapar |
@@ -43,6 +43,16 @@ aynı dosyayı okur.
 Hepsi `src/app/globals.css` en üstteki `:root` bloğunda. Bir değeri değiştirdiğinde site
 baştan aşağı ona uyar. Karanlık tema hemen altındaki blokta, ziyaretçinin sistem
 ayarına göre kendiliğinden açılıyor.
+
+## Değişiklikleri siteye gönderme
+
+Panelde kaydettiğin şeyler henüz sende duruyor. Yayına almak için:
+
+```bash
+npm run yayinla
+```
+
+Kendi mesajını yazmak istersen: `npm run yayinla "oyun eklendi"`.
 
 ## Yayına alma
 
