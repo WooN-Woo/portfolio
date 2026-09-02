@@ -18,6 +18,8 @@ export type Project = {
   summary: string;
   detail: string[];
   stack: string[];
+  /** public/ altındaki ekran görüntüleri. Boşsa görsel bölümü çıkmaz. */
+  images?: string[];
   status?: "Yayında" | "Geliştiriliyor" | "Tamamlandı" | "Arşiv" | "";
   links?: { label: string; href: string }[];
 };

@@ -474,6 +474,35 @@ ul {
   overflow: hidden;
 }
 
+/* Projenin ekran görüntüleri — yan yana, dar ekranda kaydırılabilir */
+.work-gorseller {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(min(26rem, 82%), 1fr);
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 1.5rem;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+}
+
+@media (min-width: 760px) {
+  .work-gorseller {
+    padding-left: 9rem;
+  }
+}
+
+.work-gorsel {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  object-position: top;
+  display: block;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  scroll-snap-align: start;
+}
+
 .work-detail {
   padding: 0 0 2rem;
   display: grid;
@@ -1182,6 +1211,21 @@ a.contact-row:hover {
   aspect-ratio: 16 / 10;
   object-fit: cover;
   border: 1px solid var(--line);
+}
+
+.ed-gorsel-satir {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ed-gorsel-kucuk {
+  width: 8rem;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  object-position: top;
+  border: 1px solid var(--line);
+  display: block;
 }
 
 .ed-kapak-araclar {
