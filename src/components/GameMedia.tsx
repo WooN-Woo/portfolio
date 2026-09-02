@@ -18,13 +18,16 @@ export function GameMedia({
   video?: string;
 }) {
   const [oynuyor, setOynuyor] = useState(false);
+  const [kapakYuklenemedi, setKapakYuklenemedi] = useState(false);
   const kimlik = youtubeKimlik(video ?? "");
 
-  const kapak = cover
-    ? varlik(cover)
-    : kimlik
-      ? `https://i.ytimg.com/vi/${kimlik}/hqdefault.jpg`
-      : "";
+  const kapak = kapakYuklenemedi
+    ? ""
+    : cover
+      ? varlik(cover)
+      : kimlik
+        ? `https://i.ytimg.com/vi/${kimlik}/hqdefault.jpg`
+        : "";
 
   if (kimlik && oynuyor) {
     return (
@@ -47,6 +50,8 @@ export function GameMedia({
       src={kapak}
       alt={`${title} oyunundan bir görsel`}
       loading="lazy"
+      // Görsel gelmezse yazıdan üretilen kapağa düşülür
+      onError={() => setKapakYuklenemedi(true)}
     />
   ) : (
     <div className="oyun-bos" aria-hidden="true">
