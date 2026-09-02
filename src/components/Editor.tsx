@@ -537,6 +537,17 @@ export function Editor({ baslangic }: { baslangic: SiteContent }) {
                   onDegis={(yol) => oyunGuncelle(sira, { cover: yol })}
                 />
 
+                <Alan
+                  etiket="Video bağlantısı"
+                  ipucu="YouTube adresi. Koyarsan kapağın üstünde oynat düğmesi çıkar."
+                >
+                  <Metin
+                    deger={oyun.video ?? ""}
+                    placeholder="https://youtu.be/..."
+                    onDegis={(v) => oyunGuncelle(sira, { video: v })}
+                  />
+                </Alan>
+
                 <div className="ed-izgara">
                   <Alan etiket="Oyun adı">
                     <Metin
