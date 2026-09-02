@@ -33,6 +33,8 @@ export type Game = {
   tags: string[];
   /** public/ altındaki kapak görselinin yolu. Boşsa yazıdan bir kapak üretilir. */
   cover?: string;
+  /** YouTube bağlantısı. Doluysa kapağın üstünde oynat düğmesi çıkar. */
+  video?: string;
   status?: "Yayında" | "Geliştiriliyor" | "Tamamlandı" | "Arşiv" | "";
   links?: { label: string; href: string }[];
 };

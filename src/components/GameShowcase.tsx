@@ -1,3 +1,4 @@
+import { GameMedia } from "@/components/GameMedia";
 import { Reveal } from "@/components/Reveal";
 import type { Game } from "@/content/site";
 
@@ -6,20 +7,7 @@ export function GameShowcase({ games }: { games: Game[] }) {
     <div className="oyunlar">
       {games.map((game, sira) => (
         <Reveal as="article" className="oyun" delay={sira * 90} key={game.slug}>
-          <div className="oyun-gorsel">
-            {game.cover ? (
-              <img
-                className="oyun-kapak"
-                src={game.cover}
-                alt={`${game.title} oyunundan bir görsel`}
-                loading="lazy"
-              />
-            ) : (
-              <div className="oyun-bos" aria-hidden="true">
-                <span>{game.title}</span>
-              </div>
-            )}
-          </div>
+          <GameMedia title={game.title} cover={game.cover} video={game.video} />
 
           <div className="oyun-govde">
             <div className="oyun-ust">

@@ -592,6 +592,48 @@ ul {
   transition: transform 0.7s var(--ease);
 }
 
+/* Video varsa kapak bir oynat düğmesine dönüşür */
+.oyun-oynat {
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  width: 100%;
+}
+
+.oyun-oynat-isaret {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  transition: background 0.3s var(--ease);
+  background: rgba(10, 12, 14, 0.28);
+}
+
+.oyun-oynat-isaret svg {
+  padding: 0.9rem;
+  border-radius: 50%;
+  background: rgba(10, 12, 14, 0.65);
+  box-sizing: content-box;
+  transition: transform 0.3s var(--ease);
+}
+
+.oyun-oynat:hover .oyun-oynat-isaret {
+  background: rgba(10, 12, 14, 0.12);
+}
+
+.oyun-oynat:hover .oyun-oynat-isaret svg {
+  transform: scale(1.08);
+}
+
+.oyun-video {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
 .oyun:hover .oyun-kapak {
   transform: scale(1.03);
 }
