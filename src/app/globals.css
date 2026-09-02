@@ -474,15 +474,15 @@ ul {
   overflow: hidden;
 }
 
-/* Projenin ekran görüntüleri — yan yana, dar ekranda kaydırılabilir */
+/* Ekran görüntüleri — yan yana dizilir, sığmazsa yatay kaydırılır.
+   Yükseklik sabit olduğu için dikey telefon ve yatay web görüntüleri
+   aynı sırada kırpılmadan durabiliyor. */
 .work-gorseller {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(min(26rem, 82%), 1fr);
-  gap: 1rem;
+  display: flex;
+  gap: 1.25rem;
   overflow-x: auto;
-  padding-bottom: 1.5rem;
-  scroll-snap-type: x mandatory;
+  padding-bottom: 1.75rem;
+  scroll-snap-type: x proximity;
   overscroll-behavior-x: contain;
 }
 
@@ -492,15 +492,29 @@ ul {
   }
 }
 
+.work-gorsel-kutu {
+  margin: 0;
+  flex: none;
+  max-width: 82vw;
+  scroll-snap-align: start;
+}
+
 .work-gorsel {
-  width: 100%;
-  aspect-ratio: 16 / 10;
-  object-fit: cover;
-  object-position: top;
+  height: clamp(15rem, 30vw, 22rem);
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
   display: block;
   border: 1px solid var(--line);
   background: var(--surface);
-  scroll-snap-align: start;
+}
+
+.work-gorsel-not {
+  margin-top: 0.7rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--muted);
+  max-width: 30ch;
 }
 
 .work-detail {
@@ -1322,4 +1336,9 @@ a.contact-row:hover {
     transition: none;
     animation: none;
   }
+}
+
+.ed-gorsel-govde {
+  flex: 1;
+  min-width: 0;
 }

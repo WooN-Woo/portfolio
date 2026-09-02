@@ -104,8 +104,11 @@ export default function Home() {
                     >
                       <div className="tl-period">{item.period}</div>
                       <div>
-                        <h3 className="tl-title">{item.title}</h3>
-                        <div className="tl-org">{item.org}</div>
+                        {/* Bölüm yazılmamışsa kurum adı başlığa geçer */}
+                        <h3 className="tl-title">{item.title || item.org}</h3>
+                        {item.title && item.org ? (
+                          <div className="tl-org">{item.org}</div>
+                        ) : null}
                         {item.description ? (
                           <p className="tl-desc">{item.description}</p>
                         ) : null}

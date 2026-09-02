@@ -69,19 +69,38 @@
       "year": "2025 — devam ediyor",
       "role": "Tek geliştirici",
       "status": "Geliştiriliyor",
-      "summary": "Ürünlerin barkod ve etiket yazıcısıyla takip edildiği mobil stok yönetimi uygulaması.",
+      "summary": "Depo personelinin ürünü fotoğraflayıp koddan tanımladığı, QR ile raflayıp stok tuttuğu iOS uygulaması.",
       "detail": [
-        "Kullanıcının ürünleri barkoddan okutup takip ettiği, raf etiketini doğrudan uygulamadan bastığı bir iOS uygulaması. Projenin tamamını tek başıma geliştiriyorum.",
-        "Swift ve SwiftUI ile çekirdek sistemleri ve kullanıcı deneyimini kurdum; güvenli oturum açma ve gerçek depo akışına oturan, büyümeye açık bir uygulama mimarisi tasarladım."
+        "Ürün eklemek fotoğrafla başlıyor; personel parçayı çekiyor, sonra bilgileri giriyor. Elinde yalnızca parça kodu varsa uygulama kodu çözümleyip parçanın ne olduğunu, hangi araçlara uyduğunu ve piyasadaki fiyat aralığını çıkarıyor — ürün açıklaması sıfırdan yazılmıyor.",
+        "Depo tarafında ürün ve raf QR kodları okutuluyor, miktar giriliyor ve stok kaydediliyor; raf etiketi doğrudan uygulamadan bastırılıyor. Uygulama web tarafıyla aynı veritabanını kullandığı için stok anında mağazada görünüyor.",
+        "Projeyi tek başıma geliştiriyorum: Swift ve SwiftUI ile arayüz ve çekirdek sistemler, güvenli oturum açma ve gerçek depo akışına oturan bir veri yapısı."
       ],
       "stack": [
         "Swift",
         "SwiftUI",
         "Xcode",
-        "Supabase"
+        "Supabase",
+        "QR ve etiket yazıcı"
       ],
       "links": [],
-      "images": []
+      "images": [
+        {
+          "src": "/gorseller/ogot-foto-adimi.png",
+          "caption": "Ürün eklemek fotoğrafla başlıyor: personel arka arkaya çekiyor, her karede onay ekranı çıkmıyor."
+        },
+        {
+          "src": "/gorseller/ogot-kod-ile-ekle.png",
+          "caption": "Elinde sadece parça kodu varsa yazması yeterli."
+        },
+        {
+          "src": "/gorseller/ogot-kod-analizi.png",
+          "caption": "Koddan parçanın ne olduğu, hangi araçlara uyduğu ve piyasadaki fiyat aralığı çıkıyor — ürün açıklamasını sıfırdan yazmaya gerek kalmıyor."
+        },
+        {
+          "src": "/gorseller/ogot-depo.png",
+          "caption": "Depoda ürün ve raf QR kodu okutuluyor, miktar giriliyor, stok tek dokunuşla kaydediliyor."
+        }
+      ]
     },
     {
       "slug": "original-otomotiv",
@@ -108,8 +127,14 @@
         }
       ],
       "images": [
-        "/gorseller/original-otomotiv-ana.png",
-        "/gorseller/original-otomotiv-katalog.png"
+        {
+          "src": "/gorseller/original-otomotiv-ana.png",
+          "caption": "Ziyaretçi aradığı parçayı kodundan ya da adından buluyor; arama tireli, boşluklu ve eksik yazılmış kodları da yakalıyor."
+        },
+        {
+          "src": "/gorseller/original-otomotiv-katalog.png",
+          "caption": "Katalogda marka, model ve nesle göre daraltma. Her ilanda fotoğraf, parça kodu ve fiyat."
+        }
       ]
     }
   ],
