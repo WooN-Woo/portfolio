@@ -1,0 +1,10 @@
+# Cloudflare yayın ayarı.
+# Site tamamen statik: derlenen "out" klasörü olduğu gibi sunuluyor,
+# arka planda çalışan bir kod yok.
+
+name = "portfolio"
+compatibility_date = "2026-08-01"
+
+[assets]
+directory = "./out"
+not_found_handling = "404-page"
