@@ -19,7 +19,7 @@
     {
       "slug": "dustbound-railroad",
       "title": "Dustbound Railroad",
-      "year": "20256— devam ediyor",
+      "year": "2026— devam ediyor",
       "role": "Geliştirici",
       "engine": "Unity · C#",
       "status": "Geliştiriliyor",
@@ -145,7 +145,7 @@
       "status": "Geliştiriliyor",
       "summary": "Depo personelinin ürünü fotoğraflayıp koddan tanımladığı, QR ile raflayıp stok tuttuğu iOS uygulaması.",
       "detail": [
-        "Ürün eklemek fotoğrafla başlıyor; personel parçayı çekiyor, sonra bilgileri giriyor. Elinde yalnızca parça kodu varsa uygulama kodu çözümleyip parçanın ne olduğunu, hangi araçlara uyduğunu ve piyasadaki fiyat aralığını çıkarıyor — ürün açıklaması sıfırdan yazılmıyor.",
+        "Ürün eklemek fotoğrafla başlıyor; personel parçayı çekiyor, sonra bilgileri giriyor. Elinde yalnızca parça kodu varsa uygulama kodu çözümleyip parçanın ne olduğunu, hangi araçlara uyduğunu, piyasadaki fiyat aralığını çıkarıyor ve ürün açıklaması sıfırdan yazılmıyor.",
         "Depo tarafında ürün ve raf QR kodları okutuluyor, miktar giriliyor ve stok kaydediliyor; raf etiketi doğrudan uygulamadan bastırılıyor. Uygulama web tarafıyla aynı veritabanını kullandığı için stok anında mağazada görünüyor.",
         "Projeyi tek başıma geliştiriyorum: Swift ve SwiftUI ile arayüz ve çekirdek sistemler, güvenli oturum açma ve gerçek depo akışına oturan bir veri yapısı."
       ],
