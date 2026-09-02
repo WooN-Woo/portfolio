@@ -80,7 +80,8 @@
         "Xcode",
         "Supabase"
       ],
-      "links": []
+      "links": [],
+      "images": []
     },
     {
       "slug": "original-otomotiv",
@@ -88,10 +89,11 @@
       "year": "2026",
       "role": "Tasarım, geliştirme, altyapı",
       "status": "Yayında",
-      "summary": "Yedek parça satışı için çok kullanıcılı web platformu: vitrin, üye paneli ve yönetim tarafı tek sistemde.",
+      "summary": "Yedek parça satışı için çok kullanıcılı web platformu: arama, katalog, üye paneli ve yönetim tarafı tek sistemde.",
       "detail": [
-        "Ziyaretçinin ürünü bulduğu vitrin, satıcının ilanlarını yönettiği üye paneli ve platformun işletildiği yönetim arayüzü tek kod tabanında çalışıyor. Kullanıcı rolleri ve veri erişimi veritabanı seviyesinde ayrılmış durumda.",
-        "Arama, kategori ağacı, ilan yönetimi, üyelik ve iki adımlı doğrulama sıfırdan kuruldu."
+        "Ziyaretçi aradığı parçayı kodundan ya da adından buluyor; arama tireli, boşluklu veya eksik yazılmış kodları da yakalıyor. Katalogda marka, model ve nesle göre daralt, ilanı aç, satıcıya WhatsApp üzerinden ulaş.",
+        "Aynı kod tabanında üç yüzey çalışıyor: herkese açık vitrin, satıcının ilanlarını yönettiği üye paneli ve platformun işletildiği yönetim arayüzü. Kullanıcı rolleri ve veri erişimi veritabanı seviyesinde ayrılmış durumda; üyelik, iki adımlı doğrulama ve ilan yönetimi sıfırdan kuruldu.",
+        "Tasarımdan veritabanı şemasına, yayına almadan canlı sistemin bakımına kadar tamamı bana ait."
       ],
       "stack": [
         "Next.js",
@@ -104,23 +106,11 @@
           "label": "originalotomotiv.com",
           "href": "https://originalotomotiv.com"
         }
+      ],
+      "images": [
+        "/gorseller/original-otomotiv-ana.png",
+        "/gorseller/original-otomotiv-katalog.png"
       ]
-    },
-    {
-      "slug": "rsvp",
-      "title": "RSVP Okuyucu",
-      "year": "2025",
-      "role": "Kişisel araç",
-      "status": "Arşiv",
-      "summary": "Metni kelime kelime tek noktada gösteren, hızlı okuma için yazılmış küçük bir araç.",
-      "detail": [
-        "Uzun metinleri gözü satır aramaktan kurtaracak şekilde tek bir sabit noktada akıtan bir okuyucu. Kendi ihtiyacım için yazıldı."
-      ],
-      "stack": [
-        "Python",
-        "HTML"
-      ],
-      "links": []
     }
   ],
   "experience": [],

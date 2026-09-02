@@ -152,6 +152,119 @@ function SiraDugmeleri({
   );
 }
 
+/** Bir dosyayı yerel araca gönderir, kaydedilen yolu döner. */
+async function gorselGonder(dosya: File): Promise<{ yol?: string; hata?: string }> {
+  try {
+    const base64 = await new Promise<string>((coz, red) => {
+      const okuyucu = new FileReader();
+      okuyucu.onload = () => coz(String(okuyucu.result).split(",")[1] ?? "");
+      okuyucu.onerror = () => red(new Error("okunamadı"));
+      okuyucu.readAsDataURL(dosya);
+    });
+
+    const cevap = await fetch(`${SUNUCU}/gorsel`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ad: dosya.name, veri: base64 }),
+    });
+    const sonuc = await cevap.json();
+
+    if (!cevap.ok) return { hata: sonuc.hata ?? "Görsel eklenemedi." };
+    return { yol: sonuc.yol };
+  } catch {
+    return { hata: "Görsel eklenemedi." };
+  }
+}
+
+function GorselListesi({
+  degerler,
+  onDegis,
+}: {
+  degerler: string[];
+  onDegis: (yollar: string[]) => void;
+}) {
+  const [yukleniyor, setYukleniyor] = useState(false);
+  const [hata, setHata] = useState("");
+
+  async function ekle(dosyalar: FileList) {
+    setYukleniyor(true);
+    setHata("");
+    const yeni: string[] = [];
+
+    for (const dosya of Array.from(dosyalar)) {
+      const sonuc = await gorselGonder(dosya);
+      if (sonuc.hata) setHata(sonuc.hata);
+      if (sonuc.yol) yeni.push(sonuc.yol);
+    }
+
+    if (yeni.length) onDegis([...degerler, ...yeni]);
+    setYukleniyor(false);
+  }
+
+  function tasi(sira: number, yon: -1 | 1) {
+    const hedef = sira + yon;
+    if (hedef < 0 || hedef >= degerler.length) return;
+    const kopya = [...degerler];
+    [kopya[sira], kopya[hedef]] = [kopya[hedef], kopya[sira]];
+    onDegis(kopya);
+  }
+
+  return (
+    <div className="ed-alan">
+      <span className="ed-etiket">Ekran görüntüleri</span>
+
+      {degerler.map((yol, sira) => (
+        <div className="ed-gorsel-satir" key={yol}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="ed-gorsel-kucuk" src={yol} alt="" />
+          <div className="ed-kart-araclar">
+            <button
+              type="button"
+              className="ed-mini"
+              onClick={() => tasi(sira, -1)}
+              disabled={sira === 0}
+              aria-label="Öne al"
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              className="ed-mini"
+              onClick={() => tasi(sira, 1)}
+              disabled={sira === degerler.length - 1}
+              aria-label="Geri al"
+            >
+              ↓
+            </button>
+            <button
+              type="button"
+              className="ed-mini ed-mini-sil"
+              onClick={() => onDegis(degerler.filter((_, i) => i !== sira))}
+            >
+              Sil
+            </button>
+          </div>
+        </div>
+      ))}
+
+      <label className="ed-mini ed-dosya">
+        {yukleniyor ? "Ekleniyor" : "Görsel ekle"}
+        <input
+          type="file"
+          multiple
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          onChange={(e) => {
+            if (e.target.files?.length) ekle(e.target.files);
+            e.target.value = "";
+          }}
+        />
+      </label>
+
+      {hata ? <span className="ed-hata">{hata}</span> : null}
+    </div>
+  );
+}
+
 function KapakSec({
   deger,
   onDegis,
@@ -165,33 +278,10 @@ function KapakSec({
   async function yukle(dosya: File) {
     setYukleniyor(true);
     setHata("");
-
-    try {
-      const base64 = await new Promise<string>((coz, red) => {
-        const okuyucu = new FileReader();
-        okuyucu.onload = () => coz(String(okuyucu.result).split(",")[1] ?? "");
-        okuyucu.onerror = () => red(new Error("okunamadı"));
-        okuyucu.readAsDataURL(dosya);
-      });
-
-      const cevap = await fetch(`${SUNUCU}/gorsel`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ad: dosya.name, veri: base64 }),
-      });
-      const sonuc = await cevap.json();
-
-      if (!cevap.ok) {
-        setHata(sonuc.hata ?? "Görsel eklenemedi.");
-        return;
-      }
-
-      onDegis(sonuc.yol);
-    } catch {
-      setHata("Görsel eklenemedi.");
-    } finally {
-      setYukleniyor(false);
-    }
+    const sonuc = await gorselGonder(dosya);
+    if (sonuc.hata) setHata(sonuc.hata);
+    if (sonuc.yol) onDegis(sonuc.yol);
+    setYukleniyor(false);
   }
 
   return (
@@ -779,6 +869,11 @@ export function Editor({ baslangic }: { baslangic: SiteContent }) {
                     />
                   </Alan>
                 </div>
+
+                <GorselListesi
+                  degerler={proje.images ?? []}
+                  onDegis={(yollar) => projeGuncelle(sira, { images: yollar })}
+                />
 
                 <Alan etiket="Listede görünen cümle">
                   <CokSatir

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useGorunur } from "@/components/Reveal";
 import { gecikme } from "@/lib/anim";
+import { varlik } from "@/lib/varlik";
 import type { Project } from "@/content/site";
 
 export function WorkIndex({ projects }: { projects: Project[] }) {
@@ -72,6 +73,21 @@ function ProjeSatiri({
         inert={!acik}
       >
         <div className="work-panel-inner">
+          {project.images?.length ? (
+            <div className="work-gorseller">
+              {project.images.map((gorsel) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={gorsel}
+                  className="work-gorsel"
+                  src={varlik(gorsel)}
+                  alt={`${project.title} ekran görüntüsü`}
+                  loading="lazy"
+                />
+              ))}
+            </div>
+          ) : null}
+
           <div className="work-detail">
             <div className="work-text">
               {project.detail.map((paragraph) => (

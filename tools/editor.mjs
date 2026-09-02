@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 const KOK = join(dirname(fileURLToPath(import.meta.url)), "..");
 const ICERIK = join(KOK, "src", "content", "site.json");
 const YEDEK_KLASOR = join(KOK, ".icerik-yedek");
-const GORSEL_KLASOR = join(KOK, "public", "oyunlar");
+const GORSEL_KLASOR = join(KOK, "public", "gorseller");
 const YEDEK_SAYISI = 20;
 const PORT = Number(process.env.EDITOR_PORT ?? 4311);
 
@@ -141,7 +141,7 @@ async function govdeyiOku(istek, enFazla) {
   return Buffer.concat(parcalar).toString("utf8");
 }
 
-/** Kapak görselini public/oyunlar altına yazar. */
+/** Yüklenen görseli public/gorseller altına yazar. */
 async function gorselKaydet(gelen) {
   const uzanti = String(gelen.ad ?? "").split(".").pop()?.toLowerCase() ?? "";
   const tur = GORSEL_TURLERI[uzanti];
@@ -169,7 +169,7 @@ async function gorselKaydet(gelen) {
   await writeFile(join(GORSEL_KLASOR, dosyaAdi), ikili);
 
   console.log(`  ✓ görsel eklendi — ${dosyaAdi}`);
-  return { yol: `/oyunlar/${dosyaAdi}` };
+  return { yol: `/gorseller/${dosyaAdi}` };
 }
 
 const sunucu = createServer(async (istek, cevap) => {
