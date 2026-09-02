@@ -4,16 +4,16 @@
     "role": "Oyun geliştirici",
     "location": "Ataşehir, İstanbul",
     "email": "erenbykbs@gmail.com",
-    "emailAlt": "yigitbuyukbas@stu.aydin.edu.tr",
+    "emailAlt": "",
     "phone": "+90 507 855 6257",
     "github": "https://github.com/WooN-Woo",
-    "githubLabel": "github.com/WooN-Woo",
+    "githubLabel": "github.com",
     "site": "",
     "siteLabel": "",
-    "headline": "Merhaba, ben Yiğit.\nOyunların çalışan kısmını kuruyorum.",
+    "headline": "Merhaba, ben Yiğit.",
     "intro": "İstanbul Aydın Üniversitesi Dijital Oyun Tasarımı bölümünden mezun oldum. Unity ve C# ile oynanış mekanikleri, çekirdek sistemler ve oyun içi ekonomi kuruyorum; aynı işi mobil tarafta Swift ile yapıyorum. Hızlı prototip çıkarmayı ve bir sistemi baştan sona çalışır hâle getirmeyi seviyorum. Aşağıda üzerinde çalıştığım işler var.",
-    "now": "Şu an: Dustbound Railroad'ın tren sistemleri",
-    "metaDescription": "Yiğit Eren Büyükbaş — Unity ve C# ile oynanış mekanikleri ve çekirdek sistemler kuran oyun geliştirici. Oyunlar, projeler ve CV."
+    "now": "",
+    "metaDescription": "Yiğit Eren Büyükbaş | Unity ve C# ile oynanış mekanikleri ve çekirdek sistemler kuran oyun geliştirici. Oyunlar ve projeler."
   },
   "games": [
     {
@@ -36,7 +36,8 @@
       ],
       "cover": "",
       "links": [],
-      "video": ""
+      "video": "",
+      "images": []
     },
     {
       "slug": "coffesim",
@@ -59,7 +60,80 @@
       ],
       "cover": "",
       "links": [],
-      "video": "https://www.youtube.com/watch?v=fkikWb6gpbk"
+      "video": "https://www.youtube.com/watch?v=fkikWb6gpbk",
+      "images": []
+    },
+    {
+      "slug": "sunnyland",
+      "title": "Sunnyland",
+      "year": "2023",
+      "role": "Geliştirici",
+      "engine": "Unity · C#",
+      "status": "Tamamlandı",
+      "tagline": "Çekirdek oynanış mekaniklerine odaklanan küçük ölçekli bir platform oyunu prototipi.",
+      "detail": [
+        "Engel temelli bölüm tasarımı, basit düşman karakterler ve toplanabilirlere dayalı ilerleme üzerine kurulu. Oyuncular parkur tarzı bölümlerde ilerliyor, temel düşmanlardan kaçınıyor ya da onları alt ediyor ve elle tasarlanmış ortamları keşfederken mücevher topluyor.",
+        "Proje; hareket, bölüm akışı ve oyuncu geri bildirimi üzerinde denemeler yapmak için oynanış odaklı bir demo olarak geliştirildi."
+      ],
+      "tags": [
+        "Bölüm tasarımı",
+        "Hareket mekanikleri",
+        "Düşman davranışları",
+        "Toplanabilirler",
+        "2B"
+      ],
+      "cover": "/gorseller/sunnyland-dusman.png",
+      "video": "",
+      "images": [
+        {
+          "src": "/gorseller/sunnyland-mucevher.png",
+          "caption": "Bölümlerde toplanan mücevherler."
+        },
+        {
+          "src": "/gorseller/sunnyland-kurbaga.png",
+          "caption": "Basit düşman karakterler."
+        }
+      ],
+      "links": [
+        {
+          "label": "Kaynak kodu",
+          "href": "https://github.com/WooN-Woo/Demo-platformer-game"
+        }
+      ]
+    },
+    {
+      "slug": "knight-fall",
+      "title": "The Knight Fall",
+      "year": "2023",
+      "role": "Geliştirici",
+      "engine": "Unity · C#",
+      "status": "Tamamlandı",
+      "tagline": "Kılıç ve yayla dövüşülen üçüncü şahıs 3B aksiyon prototipi.",
+      "detail": [
+        "Oyuncular elle tasarlanmış ortamlarda, hem yakın dövüş (kılıç) hem de menzilli (yay) saldırılarla düşman karakterleri alt ederek ilerliyor.",
+        "Proje; küçük ölçekli bir 3B dünyada çekirdek dövüş mekanikleri, temel düşman davranışları ve basit ilerleme sistemlerine odaklanıyor."
+      ],
+      "tags": [
+        "Dövüş mekanikleri",
+        "Yakın ve uzak menzil",
+        "Düşman davranışları",
+        "3B",
+        "Üçüncü şahıs"
+      ],
+      "cover": "/gorseller/knightfall-kilic.png",
+      "video": "",
+      "images": [
+        {
+          "src": "/gorseller/knightfall-yay.png",
+          "caption": "Yayla menzilli saldırı."
+        }
+      ],
+      "links": [
+        {
+          "label": "Kaynak kodu",
+          "href": "https://github.com/WooN-Woo/KnightFall"
+        }
+      ]
     }
   ],
   "projects": [

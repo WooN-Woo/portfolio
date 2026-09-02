@@ -709,6 +709,11 @@ export function Editor({ baslangic }: { baslangic: SiteContent }) {
                   </Alan>
                 </div>
 
+                <GorselListesi
+                  degerler={oyun.images ?? []}
+                  onDegis={(yollar) => oyunGuncelle(sira, { images: yollar })}
+                />
+
                 <Alan etiket="Tek cümlelik tanıtım">
                   <CokSatir
                     satir={2}

@@ -774,6 +774,23 @@ ul {
   gap: 1rem;
 }
 
+/* Oyunun ek görselleri kartın altında tam genişlikte durur */
+.oyun-gorseller {
+  padding-top: 0.5rem;
+}
+
+@media (min-width: 860px) {
+  .oyun-gorseller {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 760px) {
+  .oyun-gorseller {
+    padding-left: 0;
+  }
+}
+
 /* ==========================================================================
    Deneyim
    ========================================================================== */

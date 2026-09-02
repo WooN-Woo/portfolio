@@ -44,6 +44,8 @@ export type Game = {
   cover?: string;
   /** YouTube bağlantısı. Doluysa kapağın üstünde oynat düğmesi çıkar. */
   video?: string;
+  /** Kapağın altında sıralanan ek ekran görüntüleri. */
+  images?: ProjectImage[];
   status?: "Yayında" | "Geliştiriliyor" | "Tamamlandı" | "Arşiv" | "";
   links?: { label: string; href: string }[];
 };
