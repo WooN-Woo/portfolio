@@ -64,6 +64,25 @@ function ProjeSatiri({
         </span>
       </button>
 
+      {project.images?.length ? (
+        <div className="work-gorseller">
+          {project.images.map((gorsel) => (
+            <figure className="work-gorsel-kutu" key={gorsel.src}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className="work-gorsel"
+                src={varlik(gorsel.src)}
+                alt={gorsel.caption ?? `${project.title} ekran görüntüsü`}
+                loading="lazy"
+              />
+              {gorsel.caption ? (
+                <figcaption className="work-gorsel-not">{gorsel.caption}</figcaption>
+              ) : null}
+            </figure>
+          ))}
+        </div>
+      ) : null}
+
       <div
         className="work-panel"
         data-open={acik}
@@ -73,21 +92,6 @@ function ProjeSatiri({
         inert={!acik}
       >
         <div className="work-panel-inner">
-          {project.images?.length ? (
-            <div className="work-gorseller">
-              {project.images.map((gorsel) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={gorsel}
-                  className="work-gorsel"
-                  src={varlik(gorsel)}
-                  alt={`${project.title} ekran görüntüsü`}
-                  loading="lazy"
-                />
-              ))}
-            </div>
-          ) : null}
-
           <div className="work-detail">
             <div className="work-text">
               {project.detail.map((paragraph) => (

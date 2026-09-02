@@ -18,10 +18,17 @@ export type Project = {
   summary: string;
   detail: string[];
   stack: string[];
-  /** public/ altındaki ekran görüntüleri. Boşsa görsel bölümü çıkmaz. */
-  images?: string[];
+  /** Ekran görüntüleri. Boşsa görsel bölümü çıkmaz. */
+  images?: ProjectImage[];
   status?: "Yayında" | "Geliştiriliyor" | "Tamamlandı" | "Arşiv" | "";
   links?: { label: string; href: string }[];
+};
+
+export type ProjectImage = {
+  /** public/ altındaki dosya yolu. */
+  src: string;
+  /** Görselin altında görünen kısa açıklama. */
+  caption?: string;
 };
 
 export type Game = {

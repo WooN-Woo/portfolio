@@ -5,6 +5,7 @@ import type {
   ExperienceItem,
   Game,
   Project,
+  ProjectImage,
   SiteContent,
   SkillGroup,
 } from "@/content/site";
@@ -180,8 +181,8 @@ function GorselListesi({
   degerler,
   onDegis,
 }: {
-  degerler: string[];
-  onDegis: (yollar: string[]) => void;
+  degerler: ProjectImage[];
+  onDegis: (gorseller: ProjectImage[]) => void;
 }) {
   const [yukleniyor, setYukleniyor] = useState(false);
   const [hata, setHata] = useState("");
@@ -189,12 +190,12 @@ function GorselListesi({
   async function ekle(dosyalar: FileList) {
     setYukleniyor(true);
     setHata("");
-    const yeni: string[] = [];
+    const yeni: ProjectImage[] = [];
 
     for (const dosya of Array.from(dosyalar)) {
       const sonuc = await gorselGonder(dosya);
       if (sonuc.hata) setHata(sonuc.hata);
-      if (sonuc.yol) yeni.push(sonuc.yol);
+      if (sonuc.yol) yeni.push({ src: sonuc.yol, caption: "" });
     }
 
     if (yeni.length) onDegis([...degerler, ...yeni]);
@@ -213,10 +214,27 @@ function GorselListesi({
     <div className="ed-alan">
       <span className="ed-etiket">Ekran görüntüleri</span>
 
-      {degerler.map((yol, sira) => (
-        <div className="ed-gorsel-satir" key={yol}>
+      {degerler.map((gorsel, sira) => (
+        <div className="ed-gorsel-satir" key={gorsel.src}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="ed-gorsel-kucuk" src={yol} alt="" />
+          <img className="ed-gorsel-kucuk" src={gorsel.src} alt="" />
+
+          <div className="ed-gorsel-govde">
+            <input
+              className="ed-girdi"
+              type="text"
+              placeholder="Bu ekranda ne oluyor?"
+              value={gorsel.caption ?? ""}
+              onChange={(e) =>
+                onDegis(
+                  degerler.map((g, i) =>
+                    i === sira ? { ...g, caption: e.target.value } : g,
+                  ),
+                )
+              }
+            />
+          </div>
+
           <div className="ed-kart-araclar">
             <button
               type="button"
