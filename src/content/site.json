@@ -11,7 +11,7 @@
     "site": "",
     "siteLabel": "",
     "headline": "Merhaba, ben Yiğit.",
-    "intro": "İstanbul Aydın Üniversitesi Dijital Oyun Tasarımı bölümünden mezun oldum. Unity ve C# ile oynanış mekanikleri, çekirdek sistemler ve oyun içi ekonomi kuruyorum; aynı işi mobil tarafta Swift ile yapıyorum. Hızlı prototip çıkarmayı ve bir sistemi baştan sona çalışır hâle getirmeyi seviyorum. Aşağıda üzerinde çalıştığım işler var.",
+    "intro": "İstanbul Aydın Üniversitesi Dijital Oyun Tasarımı mezunuyum. Unity ve C# ile oyun mekanikleri, temel sistemler ve oyun içi ekonomiler kuruyorum; mobil tarafta da aynı şeyi Swift ile yapıyorum. Hızlı prototip çıkarmayı ve bir fikri baştan sona çalışan bir sisteme dönüştürmeyi seviyorum. Aşağıda üzerinde çalıştığım projelerden bazıları yer alıyor.",
     "now": "",
     "metaDescription": "Yiğit Eren Büyükbaş | Unity ve C# ile oynanış mekanikleri ve çekirdek sistemler kuran oyun geliştirici. Oyunlar ve projeler."
   },
@@ -70,10 +70,10 @@
       "role": "Geliştirici",
       "engine": "Unity · C#",
       "status": "Tamamlandı",
-      "tagline": "Çekirdek oynanış mekaniklerine odaklanan küçük ölçekli bir platform oyunu prototipi.",
+      "tagline": "Engel tasarımına ve toplanabilirlere dayanan 2B platform oyunu.",
       "detail": [
-        "Engel temelli bölüm tasarımı, basit düşman karakterler ve toplanabilirlere dayalı ilerleme üzerine kurulu. Oyuncular parkur tarzı bölümlerde ilerliyor, temel düşmanlardan kaçınıyor ya da onları alt ediyor ve elle tasarlanmış ortamları keşfederken mücevher topluyor.",
-        "Proje; hareket, bölüm akışı ve oyuncu geri bildirimi üzerinde denemeler yapmak için oynanış odaklı bir demo olarak geliştirildi."
+        "Oyuncu parkur tarzı bölümlerde ilerliyor, basit düşmanlardan kaçıyor ya da onları alt ediyor, yol boyunca mücevher topluyor. Bölümler elle tasarlandı.",
+        "Oynanışa odaklı bir deneme olarak yaptım: hareket hissi, bölüm akışı ve oyuncuya verilen geri bildirim üzerinde çalıştım. Bitirdiğim ilk oyun."
       ],
       "tags": [
         "Bölüm tasarımı",
@@ -87,11 +87,11 @@
       "images": [
         {
           "src": "/gorseller/sunnyland-mucevher.png",
-          "caption": "Bölümlerde toplanan mücevherler."
+          "caption": "Mücevherler bölümün akışını belirliyor; oyuncuyu risk almaya iten yerlere konuyor."
         },
         {
           "src": "/gorseller/sunnyland-kurbaga.png",
-          "caption": "Basit düşman karakterler."
+          "caption": "Düşmanlar basit ama her biri farklı bir engel: kimini atlayarak geçiyorsun, kimini alt ediyorsun."
         }
       ],
       "links": [
@@ -108,10 +108,10 @@
       "role": "Geliştirici",
       "engine": "Unity · C#",
       "status": "Tamamlandı",
-      "tagline": "Kılıç ve yayla dövüşülen üçüncü şahıs 3B aksiyon prototipi.",
+      "tagline": "Kılıç ve yayla dövüşülen üçüncü şahıs 3B aksiyon oyunu.",
       "detail": [
-        "Oyuncular elle tasarlanmış ortamlarda, hem yakın dövüş (kılıç) hem de menzilli (yay) saldırılarla düşman karakterleri alt ederek ilerliyor.",
-        "Proje; küçük ölçekli bir 3B dünyada çekirdek dövüş mekanikleri, temel düşman davranışları ve basit ilerleme sistemlerine odaklanıyor."
+        "Oyuncu elle kurulmuş alanlarda ilerliyor, düşmanları yakın dövüşte kılıçla ya da uzaktan yayla alt ediyor. İki silah arasında geçiş yapmak dövüşün temelini oluşturuyor.",
+        "Küçük ölçekli bir 3B dünyada çekirdek dövüş mekanikleri, temel düşman davranışları ve basit bir ilerleme sistemi üzerine çalıştım. İlk 3B oyunum."
       ],
       "tags": [
         "Dövüş mekanikleri",
@@ -125,7 +125,7 @@
       "images": [
         {
           "src": "/gorseller/knightfall-yay.png",
-          "caption": "Yayla menzilli saldırı."
+          "caption": "Yayla uzaktan dövüş; silah değiştirince arayüz ve nişan alma da değişiyor."
         }
       ],
       "links": [
