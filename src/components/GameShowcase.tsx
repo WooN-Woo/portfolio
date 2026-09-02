@@ -1,5 +1,6 @@
 import { GameMedia } from "@/components/GameMedia";
 import { Reveal } from "@/components/Reveal";
+import { varlik } from "@/lib/varlik";
 import type { Game } from "@/content/site";
 
 export function GameShowcase({ games }: { games: Game[] }) {
@@ -53,6 +54,25 @@ export function GameShowcase({ games }: { games: Game[] }) {
               </div>
             ) : null}
           </div>
+
+          {game.images?.length ? (
+            <div className="work-gorseller oyun-gorseller">
+              {game.images.map((gorsel) => (
+                <figure className="work-gorsel-kutu" key={gorsel.src}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    className="work-gorsel"
+                    src={varlik(gorsel.src)}
+                    alt={gorsel.caption ?? `${game.title} ekran görüntüsü`}
+                    loading="lazy"
+                  />
+                  {gorsel.caption ? (
+                    <figcaption className="work-gorsel-not">{gorsel.caption}</figcaption>
+                  ) : null}
+                </figure>
+              ))}
+            </div>
+          ) : null}
         </Reveal>
       ))}
     </div>
