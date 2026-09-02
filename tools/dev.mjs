@@ -15,7 +15,8 @@ const cocuklar = [
     cwd: KOK,
     stdio: "inherit",
   }),
-  spawn("npx", ["next", "dev"], {
+  // Sabit port: 3000 başka projelerde kullanıldığı için adres hep aynı kalsın
+  spawn("npx", ["next", "dev", "--port", process.env.PORT ?? "4300"], {
     cwd: KOK,
     stdio: "inherit",
     shell: process.platform === "win32",
