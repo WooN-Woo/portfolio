@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Sahne } from "@/components/sahne/Sahne";
 import { Ekran } from "@/components/sahne/Ekran";
 import { Pil } from "@/components/sahne/Pil";
+import { Not } from "@/components/sahne/Not";
 
 export const metadata: Metadata = {
   title: "Yeni tasarım",
@@ -18,6 +19,7 @@ export default function YeniPage() {
 
       <Ekran />
       <Pil />
+      <Not />
 
       {/* kaydırma alanı — yüksekliği koreografinin uzunluğunu belirliyor */}
       <div className="kaydirma-alani" aria-hidden="true" />

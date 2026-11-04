@@ -1540,3 +1540,67 @@ a.contact-row:hover {
     grid-column: 1;
   }
 }
+
+/* Eşya notu */
+.not-katman {
+  position: fixed;
+  left: 50%;
+  bottom: 1.6rem;
+  transform: translateX(-50%);
+  z-index: 6;
+  pointer-events: none;
+}
+
+.not-kutu {
+  pointer-events: auto;
+  width: min(26rem, 90vw);
+  background: #f3ece0;
+  color: #2f4a40;
+  border: 2px solid #3f5f54;
+  border-radius: 0.8rem;
+  padding: 0.9rem 1rem;
+  box-shadow: 0 1rem 2.4rem rgba(0, 0, 0, 0.28);
+  animation: not-gir 0.26s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+@keyframes not-gir {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+}
+
+.not-bas {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+.not-bas strong {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+}
+
+.not-bas button {
+  background: none;
+  border: 0;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #5c7a6c;
+  padding: 0 0.2rem;
+}
+
+.not-kutu p {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .not-kutu {
+    animation: none;
+  }
+}

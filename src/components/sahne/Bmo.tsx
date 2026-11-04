@@ -3,7 +3,7 @@
 import { RoundedBox } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
-import type { Group } from "three";
+import type { Group, Mesh } from "three";
 
 /**
  * BMO — gövde, ekran, düğmeler ve bacaklar temel şekillerden kuruluyor.
@@ -58,15 +58,28 @@ function YonTusu({ konum }: { konum: [number, number, number] }) {
   );
 }
 
-/** Ekrandaki yüz — iki göz ve bir ağız. */
+/** Ekrandaki yüz — arada bir göz kırpıyor. */
 function Yuz({ z }: { z: number }) {
+  const sol = useRef<Mesh>(null);
+  const sag = useRef<Mesh>(null);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    // her ~4 saniyede bir kısa kırpma
+    const dongu = t % 4;
+    const kirpma = dongu < 0.16 ? Math.abs(Math.sin(dongu * (Math.PI / 0.16))) : 0;
+    const olcekY = 1 - kirpma * 0.92;
+    sol.current?.scale.set(1, olcekY, 1);
+    sag.current?.scale.set(1, olcekY, 1);
+  });
+
   return (
     <group position={[0, 0.52, z]}>
-      <mesh position={[-0.22, 0.06, 0]}>
+      <mesh ref={sol} position={[-0.22, 0.06, 0]}>
         <circleGeometry args={[0.062, 24]} />
         <meshBasicMaterial color={RENK.yuz} />
       </mesh>
-      <mesh position={[0.22, 0.06, 0]}>
+      <mesh ref={sag} position={[0.22, 0.06, 0]}>
         <circleGeometry args={[0.062, 24]} />
         <meshBasicMaterial color={RENK.yuz} />
       </mesh>

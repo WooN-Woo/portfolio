@@ -6,6 +6,7 @@ import { Bmo } from "./Bmo";
 import { Masa } from "./Masa";
 import { Oda } from "./Oda";
 import { Kamera } from "./Kamera";
+import { Esya } from "./Esya";
 
 /**
  * Masa sahnesi. Kamera masa hizasında, karşıdan bakıyor —
@@ -41,7 +42,9 @@ export function Sahne() {
 
       <Oda />
       <Masa />
-      <Bmo konum={[-1.42, -0.12, 0.35]} olcek={0.42} donus={0.38} />
+      <Esya anahtar="bmo" konum={[-1.42, -0.12, 0.35]}>
+        <Bmo olcek={0.42} donus={0.38} />
+      </Esya>
 
       <ContactShadows position={[0, -0.33, 0.6]} opacity={0.5} scale={9} blur={2.2} far={2} />
       <Environment preset="apartment" />

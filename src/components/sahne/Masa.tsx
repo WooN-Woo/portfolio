@@ -1,6 +1,10 @@
 "use client";
 
 import { RoundedBox } from "@react-three/drei";
+import { useMemo } from "react";
+import { CanvasTexture } from "three";
+import { Esya } from "./Esya";
+import { Buhar } from "./Buhar";
 
 /** Masa yüzeyi ve üstündeki eşyalar. Hepsi temel şekillerden. */
 
@@ -9,7 +13,6 @@ const RENK = {
   masaKoyu: "#9c7049",
   fincan: "#f0ece4",
   kahve: "#4a2f20",
-  defter: "#e8e2d4",
   defterKapak: "#c4553f",
   kalem: "#f2b544",
   saksi: "#c9755a",
@@ -17,10 +20,57 @@ const RENK = {
   kulaklik: "#f2f0ec",
 };
 
-/** Kahve fincanı — gövde, kulp ve içindeki kahve. */
-function Fincan({ konum }: { konum: [number, number, number] }) {
+/** Defterin açık sayfası — sitenin nasıl gezileceğini anlatıyor. */
+function sayfaDokusu() {
+  const tuval = document.createElement("canvas");
+  tuval.width = 1024;
+  tuval.height = 640;
+  const c = tuval.getContext("2d");
+  if (!c) return null;
+
+  c.fillStyle = "#ece6d8";
+  c.fillRect(0, 0, 1024, 640);
+
+  // sayfa çizgileri
+  c.strokeStyle = "rgba(90,110,120,0.16)";
+  c.lineWidth = 2;
+  for (let y = 120; y < 640; y += 54) {
+    c.beginPath();
+    c.moveTo(60, y);
+    c.lineTo(964, y);
+    c.stroke();
+  }
+
+  // orta kıvrım
+  c.fillStyle = "rgba(0,0,0,0.07)";
+  c.fillRect(506, 0, 12, 640);
+
+  c.fillStyle = "#2f4a40";
+  c.font = "bold 46px Georgia, serif";
+  c.fillText("Nasıl gezilir", 60, 86);
+
+  c.font = "30px Georgia, serif";
+  c.fillStyle = "#3d5349";
+  const satirlar = [
+    "↓  Aşağı kaydır — BMO'nun",
+    "    ekranına yaklaşırsın.",
+    "",
+    "○  Masadaki eşyalara tıkla,",
+    "    kısa notlar açılır.",
+    "",
+    "▭  Sağ üstteki pil, sayfanın",
+    "    ne kadarını gezdiğini gösterir.",
+  ];
+  satirlar.forEach((s, i) => c.fillText(s, 60, 168 + i * 54));
+
+  const doku = new CanvasTexture(tuval);
+  doku.anisotropy = 4;
+  return doku;
+}
+
+function Fincan() {
   return (
-    <group position={konum}>
+    <group>
       <mesh castShadow receiveShadow>
         <cylinderGeometry args={[0.11, 0.095, 0.19, 28]} />
         <meshStandardMaterial color={RENK.fincan} roughness={0.35} />
@@ -33,44 +83,51 @@ function Fincan({ konum }: { konum: [number, number, number] }) {
         <torusGeometry args={[0.055, 0.016, 12, 28]} />
         <meshStandardMaterial color={RENK.fincan} roughness={0.35} />
       </mesh>
+      <Buhar konum={[0, 0.12, 0]} />
     </group>
   );
 }
 
-/** Not defteri — sitenin nasıl gezileceğini anlatan sayfa burada duracak. */
-function Defter({ konum }: { konum: [number, number, number] }) {
+function Defter() {
+  const doku = useMemo(() => (typeof document === "undefined" ? null : sayfaDokusu()), []);
+
   return (
-    <group position={konum} rotation={[0, -0.35, 0]}>
+    <group rotation={[0, -0.3, 0]}>
       <RoundedBox args={[1.02, 0.035, 0.66]} radius={0.02} smoothness={3} castShadow receiveShadow>
         <meshStandardMaterial color={RENK.defterKapak} roughness={0.7} />
       </RoundedBox>
-      <mesh position={[0, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[0.95, 0.6]} />
-        <meshStandardMaterial color={RENK.defter} roughness={0.85} />
+      <mesh position={[0, 0.026, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[0.96, 0.6]} />
+        {doku ? (
+          <meshStandardMaterial map={doku} roughness={0.9} />
+        ) : (
+          <meshStandardMaterial color="#ece6d8" roughness={0.9} />
+        )}
       </mesh>
-      {/* sayfadaki satırlar */}
-      {[0.22, 0.1, -0.02, -0.14].map((z, i) => (
-        <mesh key={z} position={[-0.06, 0.027, z * 0.8]} rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[i === 0 ? 0.34 : 0.62, 0.016]} />
-          <meshBasicMaterial color="#b9b2a2" />
+    </group>
+  );
+}
+
+function Kulaklik() {
+  return (
+    <group rotation={[0, 0.5, 0]}>
+      <mesh rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <torusGeometry args={[0.2, 0.028, 10, 24, Math.PI]} />
+        <meshStandardMaterial color={RENK.kulaklik} roughness={0.4} />
+      </mesh>
+      {[-0.2, 0.2].map((x) => (
+        <mesh key={x} position={[x, -0.02, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+          <cylinderGeometry args={[0.1, 0.1, 0.07, 20]} />
+          <meshStandardMaterial color={RENK.kulaklik} roughness={0.45} />
         </mesh>
       ))}
     </group>
   );
 }
 
-function Kalem({ konum }: { konum: [number, number, number] }) {
+function Bitki() {
   return (
-    <mesh position={konum} rotation={[0, 0.6, Math.PI / 2]} castShadow>
-      <cylinderGeometry args={[0.016, 0.016, 0.4, 12]} />
-      <meshStandardMaterial color={RENK.kalem} roughness={0.5} />
-    </mesh>
-  );
-}
-
-function Bitki({ konum }: { konum: [number, number, number] }) {
-  return (
-    <group position={konum}>
+    <group>
       <mesh castShadow receiveShadow>
         <cylinderGeometry args={[0.12, 0.095, 0.18, 20]} />
         <meshStandardMaterial color={RENK.saksi} roughness={0.7} />
@@ -89,45 +146,36 @@ function Bitki({ konum }: { konum: [number, number, number] }) {
   );
 }
 
-
-/** Kulaklık — masada yan yatıyor. */
-function Kulaklik({ konum }: { konum: [number, number, number] }) {
-  return (
-    <group position={konum} rotation={[0, 0.5, 0]}>
-      <mesh rotation={[Math.PI / 2, 0, 0]} castShadow>
-        <torusGeometry args={[0.2, 0.028, 10, 24, Math.PI]} />
-        <meshStandardMaterial color={RENK.kulaklik} roughness={0.4} />
-      </mesh>
-      {[-0.2, 0.2].map((x) => (
-        <mesh key={x} position={[x, -0.02, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-          <cylinderGeometry args={[0.1, 0.1, 0.07, 20]} />
-          <meshStandardMaterial color={RENK.kulaklik} roughness={0.45} />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
 export function Masa() {
   return (
     <group>
-      {/* masa yüzeyi */}
       <mesh position={[0, -0.34, 0.4]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[16, 7]} />
         <meshStandardMaterial color={RENK.masa} roughness={0.72} />
       </mesh>
 
-      {/* masanın ön kenarı */}
       <mesh position={[0, -0.42, 2.5]} castShadow receiveShadow>
         <boxGeometry args={[16, 0.16, 0.5]} />
         <meshStandardMaterial color={RENK.masaKoyu} roughness={0.75} />
       </mesh>
 
-      <Defter konum={[0.1, -0.33, 0.75]} />
-      <Fincan konum={[1.15, -0.26, 0.55]} />
-      <Kulaklik konum={[1.95, -0.3, 0.8]} />
-      <Bitki konum={[2.35, -0.26, -0.25]} />
-      <Kalem konum={[-0.55, -0.32, 1.35]} />
+      <Esya anahtar="defter" konum={[0.1, -0.33, 0.75]}>
+        <Defter />
+      </Esya>
+      <Esya anahtar="kahve" konum={[1.15, -0.26, 0.55]}>
+        <Fincan />
+      </Esya>
+      <Esya anahtar="kulaklik" konum={[1.95, -0.3, 0.8]}>
+        <Kulaklik />
+      </Esya>
+      <Esya anahtar="bitki" konum={[2.35, -0.26, -0.25]}>
+        <Bitki />
+      </Esya>
+
+      <mesh position={[-0.55, -0.32, 1.35]} rotation={[0, 0.6, Math.PI / 2]} castShadow>
+        <cylinderGeometry args={[0.016, 0.016, 0.4, 12]} />
+        <meshStandardMaterial color={RENK.kalem} roughness={0.5} />
+      </mesh>
     </group>
   );
 }
