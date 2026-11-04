@@ -4,32 +4,43 @@ import { Canvas } from "@react-three/fiber";
 import { Environment, ContactShadows } from "@react-three/drei";
 import { Bmo } from "./Bmo";
 import { Masa } from "./Masa";
+import { Oda } from "./Oda";
 
-/** Masa sahnesi. Şimdilik kamera sabit; scroll koreografisi sonraki adımda. */
+/**
+ * Masa sahnesi. Kamera masa hizasında, karşıdan bakıyor —
+ * oturup masaya bakıyormuş hissi için.
+ */
 export function Sahne() {
   return (
     <Canvas
       shadows
       dpr={[1, 1.8]}
-      camera={{ position: [0, 1.1, 6.2], fov: 38 }}
+      camera={{ position: [0, 0.42, 3.5], fov: 42 }}
       gl={{ antialias: true }}
     >
-      <color attach="background" args={["#efe6d8"]} />
-      <fog attach="fog" args={["#efe6d8", 9, 18]} />
+      <color attach="background" args={["#6f4d35"]} />
 
-      <ambientLight intensity={0.55} />
+      {/* ana sıcak ışık — pencereden giriyormuş gibi yandan */}
       <directionalLight
-        position={[3.5, 5, 4]}
-        intensity={1.5}
+        position={[-4, 3.5, 2.5]}
+        intensity={1.45}
+        color="#ffdfb0"
         castShadow
-        shadow-mapSize={[1024, 1024]}
+        shadow-mapSize={[2048, 2048]}
+        shadow-camera-left={-6}
+        shadow-camera-right={6}
+        shadow-camera-top={6}
+        shadow-camera-bottom={-6}
       />
-      <directionalLight position={[-4, 2, -2]} intensity={0.4} color="#ffd9a8" />
+      {/* karşı taraftan yumuşak dolgu */}
+      <directionalLight position={[3.5, 2, 2]} intensity={0.45} color="#cfe3ff" />
+      <ambientLight intensity={0.42} color="#ffeccf" />
 
+      <Oda />
       <Masa />
-      <Bmo konum={[0, -0.18, 0]} />
+      <Bmo konum={[-1.42, -0.12, 0.35]} olcek={0.42} donus={0.38} />
 
-      <ContactShadows position={[0, -1.39, 0]} opacity={0.4} scale={14} blur={2.4} far={3} />
+      <ContactShadows position={[0, -0.33, 0.6]} opacity={0.5} scale={9} blur={2.2} far={2} />
       <Environment preset="apartment" />
     </Canvas>
   );

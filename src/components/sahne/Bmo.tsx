@@ -78,7 +78,15 @@ function Yuz({ z }: { z: number }) {
   );
 }
 
-export function Bmo({ konum = [0, 0, 0] as [number, number, number] }) {
+export function Bmo({
+  konum = [0, 0, 0] as [number, number, number],
+  olcek = 1,
+  donus = 0,
+}: {
+  konum?: [number, number, number];
+  olcek?: number;
+  donus?: number;
+}) {
   const ref = useRef<Group>(null);
 
   // Hafif nefes alma hareketi — duran sahneyi canlı tutuyor
@@ -93,7 +101,7 @@ export function Bmo({ konum = [0, 0, 0] as [number, number, number] }) {
   const onYuz = derinlik / 2;
 
   return (
-    <group ref={ref} position={konum}>
+    <group ref={ref} position={konum} scale={olcek} rotation={[0, donus, 0]}>
       {/* gövde */}
       <RoundedBox args={[1.5, 1.95, derinlik]} radius={0.17} smoothness={5} castShadow receiveShadow>
         <meshStandardMaterial color={RENK.govde} roughness={0.55} />
@@ -130,8 +138,8 @@ export function Bmo({ konum = [0, 0, 0] as [number, number, number] }) {
 
       {/* bacaklar */}
       {[-0.42, 0.42].map((x) => (
-        <mesh key={x} position={[x, -1.14, 0]} castShadow>
-          <cylinderGeometry args={[0.16, 0.18, 0.4, 20]} />
+        <mesh key={x} position={[x, -1.05, 0.26]} rotation={[0.95, 0, 0]} castShadow>
+          <cylinderGeometry args={[0.15, 0.17, 0.7, 20]} />
           <meshStandardMaterial color={RENK.bacak} roughness={0.6} />
         </mesh>
       ))}
