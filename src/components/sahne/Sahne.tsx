@@ -5,6 +5,7 @@ import { Environment, ContactShadows } from "@react-three/drei";
 import { Bmo } from "./Bmo";
 import { Masa } from "./Masa";
 import { Oda } from "./Oda";
+import { Kamera } from "./Kamera";
 
 /**
  * Masa sahnesi. Kamera masa hizasında, karşıdan bakıyor —
@@ -35,6 +36,8 @@ export function Sahne() {
       {/* karşı taraftan yumuşak dolgu */}
       <directionalLight position={[3.5, 2, 2]} intensity={0.45} color="#cfe3ff" />
       <ambientLight intensity={0.42} color="#ffeccf" />
+
+      <Kamera />
 
       <Oda />
       <Masa />

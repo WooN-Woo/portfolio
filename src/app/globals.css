@@ -1359,3 +1359,184 @@ a.contact-row:hover {
   flex: 1;
   min-width: 0;
 }
+
+/* ==========================================================================
+   Masa sahnesi (/yeni)
+   ========================================================================== */
+
+.sahne-sabit {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+.kaydirma-alani {
+  height: 420vh;
+  pointer-events: none;
+}
+
+/* Pil göstergesi — sayfanın ne kadarının gezildiğini gösteriyor */
+.pil {
+  position: fixed;
+  top: 1.1rem;
+  right: 1.1rem;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.pil-govde {
+  width: 3.4rem;
+  height: 1.15rem;
+  border: 2px solid #2f4a40;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.35);
+  padding: 2px;
+  overflow: hidden;
+}
+
+.pil-dolum {
+  height: 100%;
+  background: #4fb98a;
+  border-radius: 1px;
+  transition: width 0.12s linear;
+}
+
+.pil-uc {
+  width: 4px;
+  height: 0.5rem;
+  background: #2f4a40;
+  border-radius: 0 2px 2px 0;
+  margin-left: -0.3rem;
+}
+
+.pil-yazi {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  color: #2f4a40;
+  min-width: 2.6rem;
+}
+
+/* BMO'nun ekranındaki içerik */
+.ekran-katman {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  transition: opacity 0.2s linear;
+}
+
+.ekran-cerceve {
+  width: min(52rem, 94vw);
+  height: min(34rem, 82vh);
+  background: #3f5f54;
+  border-radius: 1.4rem;
+  padding: 0.9rem;
+  box-shadow: 0 2rem 4rem rgba(0, 0, 0, 0.35);
+}
+
+.ekran-ic {
+  height: 100%;
+  overflow-y: auto;
+  background: #d9efdf;
+  border-radius: 0.8rem;
+  padding: clamp(1.2rem, 3vw, 2rem);
+  color: #22312b;
+  /* retro ekran çizgileri */
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.22) 0 2px,
+    transparent 2px 4px
+  );
+  background-blend-mode: soft-light;
+}
+
+.ekran-etiket {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #5c7a6c;
+  margin-bottom: 0.4rem;
+}
+
+.ekran-ad {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 4vw, 2.1rem);
+  letter-spacing: -0.03em;
+  margin-bottom: 0.6rem;
+}
+
+.ekran-giris {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  max-width: 46ch;
+  color: #35483f;
+}
+
+.ekran-bolum {
+  margin-top: 1.6rem;
+}
+
+.ekran-liste li {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr;
+  gap: 0.2rem 0.8rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid rgba(34, 49, 43, 0.14);
+}
+
+.ekran-yil {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: #5c7a6c;
+  padding-top: 0.25rem;
+}
+
+.ekran-baslik {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.02rem;
+}
+
+.ekran-not {
+  grid-column: 2;
+  font-size: 0.88rem;
+  color: #42574c;
+  line-height: 1.45;
+}
+
+.ekran-alt {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.ekran-alt a {
+  border-bottom: 1px solid rgba(34, 49, 43, 0.3);
+}
+
+@media (max-width: 640px) {
+  .ekran-cerceve {
+    width: 96vw;
+    height: 86vh;
+    border-radius: 1rem;
+    padding: 0.55rem;
+  }
+
+  .ekran-liste li {
+    grid-template-columns: 1fr;
+  }
+
+  .ekran-not {
+    grid-column: 1;
+  }
+}

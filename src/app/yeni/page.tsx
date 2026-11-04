@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Sahne } from "@/components/sahne/Sahne";
+import { Ekran } from "@/components/sahne/Ekran";
+import { Pil } from "@/components/sahne/Pil";
 
 export const metadata: Metadata = {
   title: "Yeni tasarım",
@@ -8,8 +10,17 @@ export const metadata: Metadata = {
 
 export default function YeniPage() {
   return (
-    <main style={{ position: "fixed", inset: 0 }}>
-      <Sahne />
-    </main>
+    <>
+      {/* sahne sabit durur, sayfa onun üstünde kayar */}
+      <div className="sahne-sabit">
+        <Sahne />
+      </div>
+
+      <Ekran />
+      <Pil />
+
+      {/* kaydırma alanı — yüksekliği koreografinin uzunluğunu belirliyor */}
+      <div className="kaydirma-alani" aria-hidden="true" />
+    </>
   );
 }
