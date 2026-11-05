@@ -606,7 +606,7 @@ export function createBmoSound({
   // birbirine çarpması (Foley'de bisiklet tekerleğine kart tutma hilesi).
   // Taneler tamamen rastgele yerleştirilince ses ritmini kaybedip statik
   // gibi duyuluyor; bu yüzden eşit aralıklara oturtulup üstüne pay veriliyor.
-  const TANE_YOGUNLUGU = 260; // saniyede, normal hızda
+  const TANE_YOGUNLUGU = 430; // saniyede, normal hızda
   const TANE_PAYI = 0.42; // aralığın bu kadarı rastgele oynuyor
   let citirtiTamponu = null;
   let sayfaKaynak = null;
@@ -628,11 +628,15 @@ export function createBmoSound({
         uzunluk - 400,
         Math.max(0, Math.floor(i * aralik + kayma)),
       );
-      const boy = Math.floor(ctx.sampleRate * (0.0015 + Math.random() * 0.0035));
-      // genliklerin çoğu küçük, azı büyük: ölçülen tepe/ortalama oranı böyle çıkıyor
-      const genlik = Math.random() ** 3;
+      const boy = Math.floor(ctx.sampleRate * (0.004 + Math.random() * 0.008));
+      // genliklerin çoğu küçük, azı büyük: tepe/ortalama oranı böyle çıkıyor
+      const genlik = Math.random() ** 3.5;
+      // Tane birden başlarsa tık gibi duyuluyor; başı yumuşatılıp sonu
+      // söndürülüyor, böylece çıtırtı değil hışırtı oluyor.
+      const cikis = Math.max(1, Math.floor(boy * 0.3));
       for (let j = 0; j < boy; j += 1) {
-        veri[nerede + j] += (Math.random() * 2 - 1) * genlik * Math.exp((-4 * j) / boy);
+        const zarf = Math.min(1, j / cikis) * Math.exp((-3 * j) / boy);
+        veri[nerede + j] += (Math.random() * 2 - 1) * genlik * zarf;
       }
     }
 
@@ -655,6 +659,12 @@ export function createBmoSound({
     sayfaBant.Q.value = 0.9;
     sayfaBant.frequency.value = 2000;
 
+    // Çıtırtı duygusu tiz uçtan geliyor; tepesi kesiliyor
+    const tiz = ctx.createBiquadFilter();
+    tiz.type = 'lowpass';
+    tiz.frequency.value = 4200;
+    tiz.Q.value = 0.7;
+
     sayfaKazanc = ctx.createGain();
     sayfaKazanc.gain.value = 0;
 
@@ -665,7 +675,7 @@ export function createBmoSound({
     panner.connect(send);
     send.connect(reverbSend);
 
-    sayfaKaynak.connect(sayfaBant).connect(sayfaKazanc).connect(panner);
+    sayfaKaynak.connect(sayfaBant).connect(tiz).connect(sayfaKazanc).connect(panner);
     sayfaKaynak.start(ctx.currentTime, Math.random() * 1.5);
   }
 
