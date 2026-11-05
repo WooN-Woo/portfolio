@@ -180,9 +180,11 @@ export function BmoSahne() {
 
     /**
      * Kaydırma durakları: her durak bir sayfa durumu (0 = kapalı defter).
-     * Kullanıcı kaydırmayı bırakınca en yakın durağa oturtuluyor; kaydırma
-     * sürerken karışılmıyor, yoksa parmağın altında sayfa zıplıyor.
+     * Kullanıcı kaydırmayı bırakıp bu kadar süre dokunmazsa en yakın durağa
+     * oturuyor. Süre kısa olursa kullanıcı daha okurken sayfa kendiliğinden
+     * kayıyor, o yüzden rahat bir pay bırakıldı.
      */
+    const HIZALAMA_BEKLEME = 2000;
     const DURAK_SAYISI = SAYFALAR.length + 1;
     const azHareket = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let hizalamaZamani = 0;
@@ -209,7 +211,7 @@ export function BmoSahne() {
       kartuslariYerlestir(sayfa.acilim - 1, sayfa.yerlesme);
 
       window.clearTimeout(hizalamaZamani);
-      hizalamaZamani = window.setTimeout(hizala, 420);
+      hizalamaZamani = window.setTimeout(hizala, HIZALAMA_BEKLEME);
     };
 
     const ekraniGoster = (icerik: Icerik) => {
