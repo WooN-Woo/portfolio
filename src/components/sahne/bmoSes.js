@@ -588,71 +588,86 @@ export function createBmoSound({
   // Burada ses tane tane üretiliyor — her tane birkaç milisaniyelik, dar
   // bantlı, rastgele perdeden bir çıtırtı. Çevirme hızlandıkça taneler
   // sıklaşıyor, ses de doğal olarak gürleşiyor.
-  // Taneler referanstaki bantta kalıyor: 1–4 kHz dışında neredeyse enerji yok.
-  function tane(at, yogunluk) {
+  // Defterin sesleri (orijinalde defter yok).
+  //
+  // Elimizdeki kâğıt sesi ölçüldü ve yapısı şu çıktı:
+  //   ~440 ms sürüyor; 350 ms boyunca düzensiz çıtırtı birikiyor,
+  //   sonra tek keskin tepe geliyor, 80 ms'de sönüyor
+  //   çıtırtılar tepeden 13–28 dB aşağıda, aralarında 15 dB oynuyor
+  //   enerjinin %96'sı 900–4000 Hz arasında, altı ve üstü boş
+  //   tepe/ortalama oranı 12 — ses düz değil, tane tane
+  //
+  // Bu yüzden sabit dosya yerine sentez: çıtırtı akışı sayfanın dönüş
+  // hızını takip ediyor, doruk vuruşu da sayfa karşı yaprağa değdiği an
+  // geliyor. Sayfa arada kalırsa ses de orada asılı kalıyor.
+  let sonTane = 0;
+
+  /** Tek çıtırtı: kısa, dar bantlı, referansın bandında. */
+  function tane(at, siddet) {
     hiss({
       at,
-      freq: 1000 + Math.random() * 2800,
-      q: 4 + Math.random() * 5,
+      freq: 950 + Math.random() * 2900,
+      q: 4 + Math.random() * 6,
       dur: 0.003 + Math.random() * 0.007,
-      vol: 0.01 + yogunluk * 0.02,
-      attack: 0.0008,
+      vol: siddet * (0.5 + Math.random()),
+      attack: 0.0007,
       pan: (Math.random() - 0.5) * 0.4,
-      wet: 0.05,
+      wet: 0,
     });
   }
 
   /**
-   * Sayfa çevrilmeye başlayınca bir kez çalan süzülme.
-   *
-   * Değerler elimizdeki kâğıt sesinin ölçümünden geliyor:
-   *   süre 75 ms; zarf yavaş çıkıp hızlı iniyor (tepe, sesin %67'sinde)
-   *   enerjinin %96'sı 900–4000 Hz arasında, altı ve üstü neredeyse boş
-   *   parlaklık 850 Hz'den 2100 Hz'e çıkıp orada duruyor
-   *   tepe/ortalama oranı 12 — yani ses düz değil, çok taneli
-   *
-   * hiz: sayfanın saniyedeki dönüş oranı. Hızlı çevirince kısalıp biraz
-   * parlıyor, yavaş çevirince uzayıp yumuşuyor.
+   * hiz: sayfanın saniyedeki dönüş oranı (0–1 arası yolun kaçta kaçı).
+   * oran: sayfanın ne kadar döndüğü (0 kapalı, 1 tam dönmüş).
    */
-  const sayfaKaydi = whenAudible((hiz = 0.5) => {
-    const guc = Math.min(1, 0.45 + hiz * 0.55);
-    const sure = 0.095 - guc * 0.033;
-    const pan = (Math.random() - 0.5) * 0.3;
+  const sayfaAkisi = whenAudible((hiz, oran) => {
+    const yogunluk = Math.min(1, hiz * 1.3);
+    if (yogunluk < 0.04) return;
 
-    hiss({
-      freq: 850,
-      sweep: sweepBetween(850, 1900 + guc * 500),
-      q: 1.6,
-      dur: sure,
-      // tepe sesin üçte ikisinde: yavaş çıkış, hızlı iniş
-      attack: sure * 0.67,
-      vol: 0.05 * guc,
-      pan,
-      wet: 0.12,
-    });
-
-    const adet = 4 + Math.round(guc * 5);
-    for (let i = 0; i < adet; i += 1) {
-      tane(sure * (0.1 + Math.random() * 0.85), guc * 0.6);
+    const now = ctx.currentTime;
+    // Hızlandıkça çıtırtılar sıklaşıyor; gürlük kazançtan değil sıklıktan
+    const aralik = 0.005 + (1 - yogunluk) * 0.05;
+    const siddet = 0.012 + yogunluk * 0.012;
+    let t = Math.max(now + 0.004, sonTane);
+    let adet = 0;
+    while (t < now + 0.1 && adet < 10) {
+      tane(t - now, siddet);
+      t += aralik * (0.4 + Math.random() * 1.2);
+      adet += 1;
     }
+    sonTane = t;
   });
 
+  function sayfaSustur() {
+    sonTane = 0;
+  }
+
   /**
-   * Sayfa karşı yaprağın üstüne düştüğünde. Çıtırtı dönerken, tok ses
-   * inerken: kâğıdın desteye değdiği an. Kapak ağır olduğu için daha pes
-   * ve uzun, sayfa hafif olduğu için tiz ve kısa.
+   * Sayfa karşı yaprağa değdiği an: referanstaki doruk vuruşu ve ardından
+   * 80 ms'de sönen çıtırtı kuyruğu. Kapakta üstüne tok bir vuruş biniyor.
    */
   const sayfaKondu = whenAudible((agir = false) => {
-    for (let i = 0; i < (agir ? 5 : 3); i += 1) {
-      tane(i * 0.012 * Math.random(), agir ? 0.5 : 0.3);
+    hiss({
+      freq: 1500,
+      sweep: sweepBetween(1500, 2600),
+      q: 1.3,
+      dur: 0.05,
+      vol: agir ? 0.1 : 0.075,
+      attack: 0.002,
+      wet: 0.1,
+    });
+    for (let i = 0; i < 7; i += 1) {
+      // kuyruk: giderek seyrekleşip sönüyor
+      tane(0.012 + i * 0.011 * (0.7 + Math.random()), 0.03 * (1 - i / 7));
     }
+    if (!agir) return;
     tone({
       at: 0.012,
       wave: 'sine',
-      freq: agir ? 140 : 205,
-      sweep: [[1, agir ? 68 : 105]],
-      dur: agir ? 0.12 : 0.075,
-      vol: agir ? 0.05 : 0.032,
+      freq: 140,
+      sweep: [[1, 68]],
+      dur: 0.12,
+      vol: 0.045,
       attack: 0.002,
       wet: 0.06,
     });
@@ -660,7 +675,8 @@ export function createBmoSound({
 
   return {
     isOn: () => on,
-    sayfaKaydi,
+    sayfaAkisi,
+    sayfaSustur,
     sayfaKondu,
     setOn(value) {
       on = value;
