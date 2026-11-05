@@ -424,6 +424,9 @@ export async function createBmo(
     // Telefonda piksel oranı ve gölge çözünürlüğü kısılabilsin
     pikselOrani = 2,
     golgeCozunurluk = 2048,
+    // Telefonda gölge haritası pahalıya geliyor; kapatılabiliyor.
+    // Nesnelerin masaya oturmuşluğunu temas lekeleri zaten veriyor.
+    golgelerAcik = true,
   } = {},
 ) {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -431,7 +434,7 @@ export async function createBmo(
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, pikselOrani));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NoToneMapping;
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = golgelerAcik;
   // PCFSoftShadowMap three 0.187'de kaldırıldı; PCFShadowMap'e düşüyor.
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.setClearColor(0, 0);
@@ -451,7 +454,7 @@ export async function createBmo(
 
   const sun = new THREE.DirectionalLight('#ffffff', Math.PI * 1.2);
   sun.position.set(1.79, 5.06, 2.68);
-  sun.castShadow = !golgeIsigi;
+  sun.castShadow = golgelerAcik && !golgeIsigi;
   sun.shadow.mapSize.set(golgeCozunurluk, golgeCozunurluk);
   sun.shadow.camera.left = -golgeAlani;
   sun.shadow.camera.right = golgeAlani;
@@ -465,7 +468,7 @@ export async function createBmo(
 
   // Yalnızca gölge atan ışık. Şiddeti sıfır olduğu için sahneyi
   // aydınlatmaz, ama gölge haritası yine de bu yönden hesaplanır.
-  if (golgeIsigi) {
+  if (golgeIsigi && golgelerAcik) {
     const golgeKaynagi = new THREE.DirectionalLight('#ffffff', 0);
     golgeKaynagi.position.set(golgeIsigi.x, golgeIsigi.y, golgeIsigi.z);
     golgeKaynagi.castShadow = true;

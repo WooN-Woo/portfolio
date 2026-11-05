@@ -17,7 +17,16 @@ const YATIKLIK = THREE.MathUtils.degToRad(27);
 /** Sehpanın masadaki yeri. */
 const YER = { x: 2.0, z: 0.1 };
 
+// Sayfa dokusunun mantıksal ölçüsü. Çizim hep bu koordinatlarda yapılıyor;
+// gerçek tuval DOKU_OLCEK kadar büyük/küçük oluyor. Telefonda doku belleğini
+// düşürmek için küçültülüyor, yerleşim aynı kalıyor.
 const DOKU = { en: 760, boy: 980 };
+let DOKU_OLCEK = 1;
+
+/** Tuvali mantıksal ölçüde çizmeye hazırlar. */
+function tuvalHazirla(ctx) {
+  ctx.setTransform(DOKU_OLCEK, 0, 0, DOKU_OLCEK, 0, 0);
+}
 
 const RENK = {
   kapak: '#8a5330',
@@ -43,6 +52,7 @@ function elYazisi() {
 // ---------------------------------------------------------------- sayfa çizimi
 /** kenar: 'sol' sayfanın cilt payı sağda, 'sag' sayfanınki solda. */
 function kagitZemin(ctx, kenar) {
+  tuvalHazirla(ctx);
   ctx.clearRect(0, 0, DOKU.en, DOKU.boy);
   ctx.fillStyle = RENK.kagit;
   ctx.fillRect(0, 0, DOKU.en, DOKU.boy);
@@ -149,7 +159,10 @@ function lekeTuvali() {
 }
 
 // ---------------------------------------------------------------- defter
-export function createDefter({ scene, renderer, projeler, kapak }) {
+export function createDefter({ scene, renderer, projeler, kapak, dokuOlcek = 1 }) {
+  DOKU_OLCEK = dokuOlcek;
+  const tuvalEn = Math.round(DOKU.en * DOKU_OLCEK);
+  const tuvalBoy = Math.round(DOKU.boy * DOKU_OLCEK);
   const kok = new THREE.Group();
   kok.position.set(YER.x, 0, YER.z);
   kok.rotation.y = -0.16;
@@ -267,8 +280,8 @@ export function createDefter({ scene, renderer, projeler, kapak }) {
   const acilimlar = projeler.map((proje, sira) => {
     const yap = () => {
       const tuval = document.createElement('canvas');
-      tuval.width = DOKU.en;
-      tuval.height = DOKU.boy;
+      tuval.width = tuvalEn;
+      tuval.height = tuvalBoy;
       return { tuval, ctx: tuval.getContext('2d') };
     };
     const sol = yap();
@@ -397,13 +410,14 @@ export function createDefter({ scene, renderer, projeler, kapak }) {
 
   /** Dış kapak: ad, unvan ve defterin nasıl gezileceği. */
   const kapakTuval = document.createElement('canvas');
-  kapakTuval.width = DOKU.en;
-  kapakTuval.height = DOKU.boy;
+  kapakTuval.width = tuvalEn;
+  kapakTuval.height = tuvalBoy;
   const kapakDoku = canvasTexture(kapakTuval, renderer);
 
   function kapakCiz() {
     const ctx = kapakTuval.getContext('2d');
     const el = elYazisi();
+    tuvalHazirla(ctx);
     ctx.clearRect(0, 0, DOKU.en, DOKU.boy);
 
     // deri kapak

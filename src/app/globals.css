@@ -1371,7 +1371,10 @@ a.contact-row:hover {
 .bmo-sahne {
   position: sticky;
   top: 0;
+  /* iOS'ta 100vh adres çubuğunu saymaz, sahnenin altı kesilir.
+     svh görünen alanı verir; desteklemeyen tarayıcı vh'de kalır. */
   height: 100vh;
+  height: 100svh;
 }
 
 .bmo-oda {
@@ -1390,6 +1393,26 @@ a.contact-row:hover {
   background-image: url("/sahne/masa.jpg");
   background-size: cover;
   background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+/* Geçici teşhis paneli — yalnızca adreste ?tani varken görünür */
+.bmo-tani {
+  display: none;
+}
+.bmo-tani[data-acik="true"] {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 50;
+  display: block;
+  max-width: 100%;
+  margin: 0;
+  padding: 6px 8px;
+  color: #d8f4ea;
+  background: rgba(10, 8, 5, 0.86);
+  font: 11px/1.45 ui-monospace, monospace;
+  white-space: pre-wrap;
   pointer-events: none;
 }
 
