@@ -587,6 +587,7 @@ export function createDefter({ scene, renderer, projeler, kapak, dokuOlcek = 1 }
   // Durumlar: 0 = defter kapalı (dış kapak görünür), 1 = ilk açılım,
   // 2 = ikinci açılım... Aradaki değerlerde yaprak yarı çevrili durur.
   const DURUM_SAYISI = toplam + 1;
+  const sinirla = (deger) => Math.min(1, Math.max(0, deger));
   let sonYaprak = -1;
 
   /** Yaprağın ön yüzü: ilk yaprak dış kapak, sonrakiler sağ sayfalar. */
@@ -631,13 +632,20 @@ export function createDefter({ scene, renderer, projeler, kapak, dokuOlcek = 1 }
     bukumUygula(arkaGeo, aci);
 
     const yakin = Math.round(adim);
-    // Kartuş sol sayfada duruyor; çevrilen yaprak ise dönüşün ilk yarısında
-    // sağ tarafta, yalnızca son çeyrekte sol sayfanın üstüne iniyor.
-    // Bu yüzden pencere tek yönlü dar: durak geçildikten sonra kartuş uzun
-    // süre durur, bir sonraki durağa yaklaşırken son anda kaybolur.
+    // Kartuş sol sayfada duruyor; çevrilen yaprak dönüşün ilk yarısında sağ
+    // tarafta kalıyor. Yaprağın bükülmüş yüzeyi kartuşun sağ kenarına
+    // pay 0.498'de ulaşıyor (geometriden hesaplandı), kesişme ancak orada
+    // başlıyor.
+    //
+    // Kartuş bu noktaya kadar TAM BOYDA duruyor, sonra hızla küçülüyor.
+    // Doğrusal küçültülünce yolun çoğunda yarım boyda kalıyor, "kartuş yok"
+    // gibi görünüyordu.
+    const KESISME = 0.47; // 0.498'in biraz altı, pay bırakmak için
     const fark = adim - yakin;
-    const pencere = fark > 0 ? 0.45 : 0.03;
-    const yerlesme = 1 - Math.min(1, Math.abs(fark) / pencere);
+    const yerlesme =
+      fark > 0
+        ? 1 - sinirla((fark - KESISME) / 0.05)
+        : 1 - sinirla(-fark / 0.03);
     // yaprak: o an çevrilmekte olan yaprağın sırası (0 = dış kapak)
     return { acilim: yakin - 1, yerlesme, yaprak: i, pay };
   }
