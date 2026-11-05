@@ -1614,8 +1614,8 @@ a.contact-row:hover {
 }
 
 /* --- BMO'nun ekranı: kartuş takılınca açılan katman ---
-   Stiller adarkeser.com'un bmo-screen.css dosyasından alındı. Rengi BMO'nun
-   3B ekranıyla aynı olduğu için zoom bitiminde geçiş görünmüyor. */
+   Rengi BMO'nun 3B ekranıyla aynı olduğu için zoom bitiminde geçiş
+   görünmüyor. */
 /* Sahnenin sağ üstündeki araçlar: ses ve sade moda dönüş */
 .bmo-araclar {
   position: absolute;

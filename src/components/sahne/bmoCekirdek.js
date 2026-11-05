@@ -1,9 +1,6 @@
 // BMO: geometri dosyası, görsel veya 3D model yok; her şey koddan üretiliyor.
-// adarkeser.com'daki bmoScene bundle'ından çıkarıldı, okunur hale getirildi.
-// Ölçüler, renkler ve animasyon değerleri orijinalle birebir aynıdır.
 //
-// Oda ve arka plana göre kamera hizalama dahil değildir.
-// Onların orijinali: original/bmo.pretty.js
+// Oda ve arka plana göre kamera hizalama bu dosyada değil, sahnede yapılıyor.
 //
 // Ses: createBmoSound() sonucunu sound seçeneğiyle ver (bkz. bmo-sound.js).
 // Verilmezse BMO sessiz çalışır.
@@ -14,7 +11,7 @@
 //   face ve shot görselleri aynı alan adından gelmeli ya da CORS izni olmalı,
 //   yoksa tarayıcı canvas dokusunu WebGL'e yüklemeyi reddeder.
 //
-// Zoom orijinaldeki kamera yolunun aynısıdır, ama kartuşa bağlı değildir:
+// Zoom kartuşa bağlı değildir, ayrıca da tetiklenebilir:
 //   tıklama: onButton içinde bmo.zoomIn() çağır (bkz. index.html)
 //   scroll:  bmo.setZoom(0-1 arası ilerleme) çağır (bkz. scroll.html)
 
@@ -403,7 +400,7 @@ export async function createBmo(
     onHover = /** @type {((index: number | null) => void) | undefined} */ (undefined),
     onButton = /** @type {((name: string) => void) | undefined} */ (undefined),
     sound = /** @type {any} */ (undefined),
-    // --- buradan aşağısı bu projeye özel ek (orijinalde yok) ---
+    // --- sahneye göre ayarlanan kadraj, gölge ve başarım seçenekleri ---
     // Kameranın ev konumu: BMO tuvalin tam ortasında değil, arka plandaki
     // masanın köşesinde dursun diye kaydırılıyor. Kaydırma görünen alanın
     // oranı cinsinden; ekran oranı değişince BMO masadan kaymıyor. Zoom
@@ -416,9 +413,9 @@ export async function createBmo(
     // Sahnede BMO'dan başka nesne de var (defter, sehpa); gölge kamerası
     // onları da kapsasın.
     golgeAlani = 3,
-    // Gölgeyi aydınlatmadan ayırmak için. Orijinalde gölgeyi güneş atıyor ve
-    // ışık önden geldiği için gölge arkaya düşüyor; boyalı odada ışık
-    // pencereden, yani arkadan geliyor.
+    // Gölgeyi aydınlatmadan ayırmak için. Gölgeyi güneş atarsa, ışık önden
+    // geldiği için gölge arkaya düşüyor; boyalı odada ışık pencereden,
+    // yani arkadan geliyor.
     golgeIsigi = /** @type {{x: number, y: number, z: number} | null} */ (null),
     temasGolgesiOpaklik = 0.55,
     // Gölgenin düştüğü zemin; masanın sınırlarına çekilmezse gölge sarkıyor.
@@ -967,7 +964,7 @@ export async function createBmo(
   }
 
   // Yatay ekranda BMO'nun iki yanında sütun, dikey ekranda üstte sıra.
-  // Beş kartuşta Adar'ın dizilimine denk gelir, sayı değişince kendini ayarlar.
+  // Beş kartuş için ayarlandı, sayı değişince kendini toparlıyor.
   function columnSlots(size, box) {
     const count = carts.length;
     const midY = (box.minY + box.maxY) / 2;
@@ -1030,8 +1027,8 @@ export async function createBmo(
       maxY: Math.max(...points.map((p) => p.y)),
     };
 
-    // Bu projede altı kartuş var; orijinaldeki beşlik dizilim dar telefonda
-    // kenarlardan taşıyordu, kalabalık payı ve dikeydeki boy biraz kısıldı.
+    // Altı kartuş dar telefonda kenarlardan taşıyordu; kalabalık payı ve
+    // dikeydeki boy biraz kısıldı.
     const crowding = Math.min(1, 5 / carts.length);
     const portrait = w / h < 0.95;
     const size = portrait
@@ -1333,7 +1330,7 @@ export async function createBmo(
   frame = requestAnimationFrame(loop);
 
   return {
-    // --- bu projeye özel ekler ---
+    // --- sahnenin kullandığı uçlar ---
     // Defter de aynı sahneye ekleniyor: ışık, gölge ve perspektif aynı olsun.
     scene,
     camera,

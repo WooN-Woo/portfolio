@@ -223,6 +223,42 @@ export function BmoSahne() {
       iz.style.height = `${birim}svh`;
     };
 
+    /**
+     * Durağa yumuşak geçiş.
+     *
+     * Tarayıcının kendi "smooth" davranışı kullanılıyordu: süresi ve eğrisi
+     * tarayıcıya bağlı, kısa mesafede bile sert hissettiriyor. Burada süre
+     * mesafeye göre belirleniyor ve eğri iki uçta da yavaşlıyor — sayfa
+     * durağa süzülerek oturuyor.
+     */
+    let hizalamaKare = 0;
+
+    const hizalamaIptal = () => {
+      if (hizalamaKare) cancelAnimationFrame(hizalamaKare);
+      hizalamaKare = 0;
+    };
+
+    const yumusakGit = (hedef: number) => {
+      hizalamaIptal();
+      const baslangic = window.scrollY;
+      const yol = hedef - baslangic;
+      if (azHareket) {
+        window.scrollTo({ top: hedef, behavior: "instant" });
+        return;
+      }
+      const sure = Math.min(820, Math.max(340, Math.abs(yol) * 0.7));
+      const basladi = performance.now();
+      const adim = (simdi: number) => {
+        const t = Math.min(1, (simdi - basladi) / sure);
+        const egri = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        // "instant" şart: sitede global scroll-behavior: smooth var, yoksa
+        // tarayıcı her kareyi ayrıca yumuşatıyor ve iki animasyon çakışıyor.
+        window.scrollTo({ top: baslangic + yol * egri, behavior: "instant" });
+        hizalamaKare = t < 1 ? requestAnimationFrame(adim) : 0;
+      };
+      hizalamaKare = requestAnimationFrame(adim);
+    };
+
     const hizala = () => {
       if (durum !== "idle" || dikeyMi()) return;
       const yol = iz.offsetHeight - window.innerHeight;
@@ -233,7 +269,7 @@ export function BmoSahne() {
       const adim = Math.round(ilerleme * adet);
       const hedef = ust + (adim / adet) * yol;
       if (Math.abs(window.scrollY - hedef) < 2) return;
-      window.scrollTo({ top: hedef, behavior: azHareket ? "auto" : "smooth" });
+      yumusakGit(hedef);
     };
 
     /**
@@ -458,6 +494,13 @@ export function BmoSahne() {
       guncelle();
     })();
 
+    // Kullanıcı tekerleğe ya da ekrana dokunursa hizalama derhal bırakılıyor;
+    // yoksa animasyon parmağın altında sayfayı çekiştiriyor.
+    const kullaniciMudahalesi = () => hizalamaIptal();
+    window.addEventListener("wheel", kullaniciMudahalesi, { passive: true });
+    window.addEventListener("touchstart", kullaniciMudahalesi, { passive: true });
+    window.addEventListener("keydown", kullaniciMudahalesi);
+
     window.addEventListener("scroll", guncelle, { passive: true });
     const yenidenBoyutla = () => {
       izYuksekligiAyarla();
@@ -476,6 +519,10 @@ export function BmoSahne() {
       window.removeEventListener("resize", yenidenBoyutla);
       window.removeEventListener("keydown", tusa);
       window.clearTimeout(hizalamaZamani);
+      hizalamaIptal();
+      window.removeEventListener("wheel", kullaniciMudahalesi);
+      window.removeEventListener("touchstart", kullaniciMudahalesi);
+      window.removeEventListener("keydown", kullaniciMudahalesi);
       sesiDegistirRef.current = null;
       ses.dispose();
       geriDugme?.removeEventListener("click", kapat);

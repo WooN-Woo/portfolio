@@ -1,6 +1,5 @@
-// BMO'nun sesleri: adarkeser.com'daki index bundle'ından çıkarıldı, okunur hale getirildi.
+// BMO'nun sesleri.
 // Efektlerin hepsi Web Audio ile koddan üretilir, ses dosyası yalnızca konuşmalar içindir.
-// Frekans, süre ve seviye değerleri orijinalle aynıdır. Orijinali: original/sound.pretty.js
 //
 //   const sound = createBmoSound();
 //   const bmo = await createBmo(canvas, { projects, sound });
@@ -113,7 +112,7 @@ export function createBmoSound({
     );
   }
 
-  // Bu projeye özel ek: defterin sesi gerçek bir kâğıt kaydından geliyor.
+  // Defterin sesi gerçek bir kâğıt kaydından geliyor.
   // Kayıt tek bir sürtmeydi (~0,6 sn), olduğu gibi döngüye alınırsa her
   // yarım saniyede aynı savrulma tekrarlardı. Bu yüzden kayıttan kesilen
   // kısa dilimler üst üste bindirilip dikişsiz bir doku üretildi; dosya
@@ -606,14 +605,14 @@ export function createBmoSound({
   // Dosyalar küçük, baştan inerse ilk tıklamadaki konuşma da yetişir
   if (on) downloadVoices();
 
-  // Bu projeye özel ek (orijinalde defter yok): defterin sesleri.
+  // Defterin sesleri.
   //
   // Kâğıt düz bir hışırtı değil: lifler ayrılırken yüzlerce minik çıtırtı
   // çıkıyor. Sürekli süzülmüş gürültü bu yüzden kum gibi duyuluyordu.
   // Burada ses tane tane üretiliyor — her tane birkaç milisaniyelik, dar
   // bantlı, rastgele perdeden bir çıtırtı. Çevirme hızlandıkça taneler
   // sıklaşıyor, ses de doğal olarak gürleşiyor.
-  // Defterin sesleri (orijinalde defter yok).
+  // Defterin sesleri.
   //
   // Elimizdeki kâğıt sesi ölçüldü:
   //   ~440 ms; 350 ms çıtırtı birikiyor, sonra tek keskin tepe, 80 ms sönüm
