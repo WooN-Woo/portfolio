@@ -631,32 +631,23 @@ export function createDefter({ scene, renderer, projeler, kapak, dokuOlcek = 1 }
     bukumUygula(onGeo, aci);
     bukumUygula(arkaGeo, aci);
 
-    const yakin = Math.round(adim);
-    // Kartuş sol sayfada duruyor; çevrilen yaprak dönüşün ilk yarısında sağ
-    // tarafta kalıyor. Yaprağın bükülmüş yüzeyi kartuşun sağ kenarına
-    // pay 0.498'de ulaşıyor (geometriden hesaplandı), kesişme ancak orada
-    // başlıyor.
+    // Kartuş sol sayfada duruyor; çevrilen yaprak onun üstünden geçiyor.
+    // Ama kesişme sadece yaprağın kartuş gövdesinin hizasına indiği kısa
+    // aralıkta oluyor: ölçüldü, pay 0.884 – 0.937. Yaprak bundan önce
+    // kartuşun üstünde, sonra altında kalıyor.
     //
-    // Kartuş bu noktaya kadar TAM BOYDA duruyor, sonra hızla küçülüyor.
-    // Doğrusal küçültülünce yolun çoğunda yarım boyda kalıyor, "kartuş yok"
-    // gibi görünüyordu.
-    // Ters yönde (sayfa soldan sağa açılırken) kartuş eskiden son 0.03'te
-    // geliyordu, gereksiz geç kalıyordu. Ölçüme göre yaprak kartuşun
-    // gövdesinden yalnızca pay 0.85–0.91 arasında geçiyor; 0.92'den sonra
-    // kartuşun altında kalıyor, yani kesişme bitiyor.
-    const KESISME = 0.47; // 0.498'in biraz altı, pay bırakmak için
-    // Kartuş çarpışma bandı biter bitmez (pay 0.92) belirip 0.95'te tam
-    // boya çıkıyor. Doğrusal rampa kullanılınca büyümenin tamamı son
-    // kılpaya yığılıyor, kartuş yine yokmuş gibi duruyordu.
-    const DONUS_BAS = 0.08;
-    const DONUS_TAM = 0.05;
-    const fark = adim - yakin;
+    // Bu yüzden kartuş dönüşün neredeyse tamamında duruyor. Sayfa soldan
+    // sağa kalkarken de altından çıkan kartuş hemen görünüyor; eskiden
+    // yaprak yarıyı geçene kadar bekliyordu.
+    const BANT_BAS = 0.87;
+    const BANT_SON = 0.95;
+    const acilim = pay > BANT_SON ? i : i - 1;
     const yerlesme =
-      fark > 0
-        ? 1 - sinirla((fark - KESISME) / 0.05)
-        : sinirla((DONUS_BAS + fark) / (DONUS_BAS - DONUS_TAM));
-    // yaprak: o an çevrilmekte olan yaprağın sırası (0 = dış kapak)
-    return { acilim: yakin - 1, yerlesme, yaprak: i, pay };
+      pay < BANT_BAS
+        ? 1 - sinirla((pay - (BANT_BAS - 0.03)) / 0.03)
+        : sinirla((pay - BANT_SON) / 0.03);
+
+    return { acilim, yerlesme, yaprak: i, pay };
   }
 
   setIlerleme(0);
