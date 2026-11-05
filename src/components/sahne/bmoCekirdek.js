@@ -406,6 +406,9 @@ export async function createBmo(
     // Kartuşların yerini dışarısı belirliyorsa (defterin sayfasına
     // oturtuluyorlar) çekirdeğin kendi yerleşimi devre dışı kalır.
     disKartusYerlesimi = false,
+    // Sahnede BMO'dan başka nesne de var (defter, sehpa). Gölge kamerasının
+    // kapsadığı alan onları da içersin diye dışarıdan verilebiliyor.
+    golgeAlani = 3,
   } = {},
 ) {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -414,7 +417,7 @@ export async function createBmo(
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NoToneMapping;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFShadowMap;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.setClearColor(0, 0);
 
   // Etiketler bir kez çizildiği için font ve görseller önce yüklenir
@@ -434,17 +437,17 @@ export async function createBmo(
   sun.position.set(1.79, 5.06, 2.68);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
-  sun.shadow.camera.left = -3;
-  sun.shadow.camera.right = 3;
-  sun.shadow.camera.top = 2.6;
-  sun.shadow.camera.bottom = -2.6;
+  sun.shadow.camera.left = -golgeAlani;
+  sun.shadow.camera.right = golgeAlani;
+  sun.shadow.camera.top = golgeAlani * 0.87;
+  sun.shadow.camera.bottom = -golgeAlani * 0.87;
   sun.shadow.camera.near = 1;
   sun.shadow.camera.far = 12;
   sun.shadow.bias = -4e-4;
   sun.shadow.normalBias = 0.02;
   scene.add(sun);
 
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(8, 8), new THREE.ShadowMaterial({ opacity: 0.32 }));
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(8, 8), new THREE.ShadowMaterial({ opacity: 0.26 }));
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   scene.add(ground);

@@ -6,6 +6,7 @@
 // iki nesne aynı çizgi film dilinde duruyor.
 
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { addOutline, canvasTexture, toon } from './bmoCekirdek';
 
 // ---------------------------------------------------------------- ölçüler
@@ -132,6 +133,21 @@ function karalama(ctx, cerceve) {
   ctx.restore();
 }
 
+/** Temas gölgesi için yumuşak leke. */
+function lekeTuvali() {
+  const tuval = document.createElement('canvas');
+  tuval.width = 256;
+  tuval.height = 128;
+  const ctx = tuval.getContext('2d');
+  const gecis = ctx.createRadialGradient(128, 64, 6, 128, 64, 120);
+  gecis.addColorStop(0, 'rgba(55, 24, 8, 0.85)');
+  gecis.addColorStop(0.45, 'rgba(55, 24, 8, 0.45)');
+  gecis.addColorStop(1, 'rgba(55, 24, 8, 0)');
+  ctx.fillStyle = gecis;
+  ctx.fillRect(0, 0, 256, 128);
+  return tuval;
+}
+
 // ---------------------------------------------------------------- defter
 export function createDefter({ scene, renderer, projeler }) {
   const kok = new THREE.Group();
@@ -139,39 +155,52 @@ export function createDefter({ scene, renderer, projeler }) {
   kok.rotation.y = -0.16;
   scene.add(kok);
 
-  // --- sehpa
+  // Defterin alt kenarının masadaki yeri. Sehpa da buna göre kuruluyor.
+  const TABAN_Y = 0.13;
+  const TABAN_Z = 0.12;
+  /** Defter düzleminin normali — sehpa parçaları bu yön boyunca kaydırılıyor. */
+  const normal = new THREE.Vector3(0, Math.sin(YATIKLIK), Math.cos(YATIKLIK));
+  const merkezY = TABAN_Y + Math.cos(YATIKLIK) * SAYFA.boy * 0.5;
+  const merkezZ = TABAN_Z - Math.sin(YATIKLIK) * SAYFA.boy * 0.5;
+
+  const KITAP_EN = SAYFA.en * 2;
+
+  /** Yumuşak köşeli ahşap parça. */
+  function tahta(en, boy, derinlik, renk, yaricap = 0.03) {
+    const mesh = new THREE.Mesh(
+      new RoundedBoxGeometry(en, boy, derinlik, 3, yaricap),
+      toon(renk),
+    );
+    addOutline(mesh, 0.013);
+    return mesh;
+  }
+
+  // --- sehpa: masaya yatan kaide, ona yaslanan eğik tabla ve defteri tutan
+  //     ince çıta. Hepsi yumuşak köşeli, kalas gibi durmasın diye.
   const sehpa = new THREE.Group();
   kok.add(sehpa);
 
-  // Tabla defterle aynı düzlemde: ince ekseni (y) defterin yüzey normaline
-  // bakacak şekilde döndürülüyor, sonra o normal boyunca biraz geri itiliyor.
-  const normal = new THREE.Vector3(0, Math.sin(YATIKLIK), Math.cos(YATIKLIK));
-  const merkezY = 0.1 + Math.cos(YATIKLIK) * SAYFA.boy * 0.5;
-  const merkezZ = 0.07 - Math.sin(YATIKLIK) * SAYFA.boy * 0.5;
+  const kaide = tahta(KITAP_EN + 0.26, 0.085, 0.6, RENK.sehpa, 0.035);
+  kaide.position.set(0, 0.043, TABAN_Z - 0.22);
+  sehpa.add(kaide);
 
-  const tabla = new THREE.Mesh(
-    new THREE.BoxGeometry(SAYFA.en * 2.3, 0.05, SAYFA.boy * 1.08),
-    toon(RENK.sehpa),
-  );
+  const tabla = tahta(KITAP_EN + 0.14, 0.055, SAYFA.boy * 0.92, RENK.sehpa, 0.025);
   tabla.rotation.x = Math.PI / 2 - YATIKLIK;
-  tabla.position.set(0, merkezY, merkezZ);
-  tabla.position.addScaledVector(normal, -0.08);
+  tabla.position.set(0, merkezY - 0.05, merkezZ);
+  tabla.position.addScaledVector(normal, -0.075);
   sehpa.add(tabla);
-  addOutline(tabla, 0.014);
 
-  const cita = new THREE.Mesh(
-    new THREE.BoxGeometry(SAYFA.en * 2.3, 0.11, 0.1),
-    toon(RENK.sehpaKoyu),
-  );
-  cita.position.set(0, 0.055, 0.14);
+  const cita = tahta(KITAP_EN + 0.14, 0.095, 0.065, RENK.sehpaKoyu, 0.028);
+  cita.rotation.x = -YATIKLIK;
+  cita.position.set(0, TABAN_Y + 0.005, TABAN_Z);
+  cita.position.addScaledVector(normal, 0.05);
   sehpa.add(cita);
-  addOutline(cita, 0.014);
 
-  const ayak = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.78, 0.08), toon(RENK.sehpaKoyu));
-  ayak.position.set(0, 0.34, -0.46);
-  ayak.rotation.x = 0.3;
-  sehpa.add(ayak);
-  addOutline(ayak, 0.014);
+  // arka destek: tablanın arkasında, yandan görünmeyecek kadar içeride
+  const destek = tahta(0.13, 0.6, 0.1, RENK.sehpaKoyu, 0.03);
+  destek.rotation.x = 0.44;
+  destek.position.set(0, 0.29, merkezZ - 0.18);
+  sehpa.add(destek);
 
   // --- defterin kendisi
   const kitap = new THREE.Group();
@@ -179,20 +208,34 @@ export function createDefter({ scene, renderer, projeler }) {
   kitap.position.set(0, merkezY, merkezZ);
   kok.add(kitap);
 
+  // kapak: sayfalardan biraz büyük, yumuşak köşeli
   const kapak = new THREE.Mesh(
-    new THREE.BoxGeometry(SAYFA.en * 2 + 0.1, SAYFA.boy + 0.1, 0.05),
+    new RoundedBoxGeometry(KITAP_EN + 0.11, SAYFA.boy + 0.11, 0.055, 3, 0.035),
     toon(RENK.kapak),
   );
-  kapak.position.z = -0.035;
+  kapak.position.z = -0.045;
   kitap.add(kapak);
   addOutline(kapak, 0.016);
 
-  const sirt = new THREE.Mesh(
-    new THREE.BoxGeometry(0.08, SAYFA.boy + 0.1, 0.06),
+  // kâğıt destesi: iki yanda kalınlık versin, kenarları görünsün
+  for (const yon of [-1, 1]) {
+    const deste = new THREE.Mesh(
+      new RoundedBoxGeometry(SAYFA.en - 0.015, SAYFA.boy - 0.02, 0.04, 2, 0.012),
+      toon(RENK.kagitKoyu),
+    );
+    // kutunun ön yüzü sayfa düzleminin arkasında kalmalı, yoksa sayfayı örter
+    deste.position.set((yon * SAYFA.en) / 2, 0, -0.032);
+    kitap.add(deste);
+    addOutline(deste, 0.01);
+  }
+
+  // cilt: ortada ince bir şerit
+  const cilt = new THREE.Mesh(
+    new RoundedBoxGeometry(0.085, SAYFA.boy + 0.11, 0.08, 2, 0.03),
     toon(RENK.kapakKoyu),
   );
-  sirt.position.z = -0.03;
-  kitap.add(sirt);
+  cilt.position.z = -0.035;
+  kitap.add(cilt);
 
   // --- sayfalar
   const toplam = projeler.length;
@@ -402,6 +445,24 @@ export function createDefter({ scene, renderer, projeler }) {
   kok.traverse((o) => {
     if (o.isMesh && !o.userData.hull) o.castShadow = true;
   });
+
+  // Sehpanın masaya oturduğu yerdeki yumuşak leke. Yönlü ışığın gölgesi tek
+  // başına yetmiyor: nesne masaya değdiği yerde koyulaşmazsa yapıştırılmış
+  // gibi duruyor.
+  const temasGolgesi = new THREE.Mesh(
+    new THREE.PlaneGeometry(KITAP_EN + 0.55, 0.95),
+    new THREE.MeshBasicMaterial({
+      map: canvasTexture(lekeTuvali(), renderer),
+      transparent: true,
+      opacity: 0.7,
+      depthWrite: false,
+      toneMapped: false,
+    }),
+  );
+  temasGolgesi.rotation.x = -Math.PI / 2;
+  temasGolgesi.position.set(0, 0.006, TABAN_Z - 0.16);
+  temasGolgesi.renderOrder = 1;
+  kok.add(temasGolgesi);
 
   // ---------------------------------------------------------------- akış
   let sonIndeks = -1;

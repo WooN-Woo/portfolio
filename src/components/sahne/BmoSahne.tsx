@@ -220,6 +220,7 @@ export function BmoSahne() {
         evUzaklik: EV_UZAKLIK,
         evKaydirma: EV_KAYDIRMA,
         disKartusYerlesimi: true,
+        golgeAlani: 4.8,
         projects: ICERIK.map((icerik) => ({
           name: icerik.ad,
           shortName: icerik.kisaAd,
