@@ -18,8 +18,8 @@ import { TvEkran } from "./TvEkran";
 const DIKEY_HIZA = 0.74;
 
 /** BMO'nun kadrajdaki yeri — masanın boş köşesine denk gelsin diye. */
-const EV_UZAKLIK = 1.05;
-const EV_KAYDIRMA = { x: 0.19, y: 0.12 };
+const EV_UZAKLIK = 1.25;
+const EV_KAYDIRMA = { x: 0.2, y: 0 };
 
 /** Oda hangi noktada tamamen sönsün (0–1 arası kaydırma ilerlemesi). */
 const ODA_SONME = 0.33;
