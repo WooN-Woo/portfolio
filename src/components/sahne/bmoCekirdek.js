@@ -409,6 +409,12 @@ export async function createBmo(
     // Sahnede BMO'dan başka nesne de var (defter, sehpa). Gölge kamerasının
     // kapsadığı alan onları da içersin diye dışarıdan verilebiliyor.
     golgeAlani = 3,
+    // Gölgeyi aydınlatmadan ayırmak için. Orijinalde gölgeyi güneş atıyor ve
+    // ışık önden geldiği için gölge arkaya düşüyor; boyalı odada ışık
+    // pencereden, yani arkadan geliyor. Burası doluysa güneş yalnızca
+    // aydınlatır, gölgeyi şiddeti sıfır olan ayrı bir ışık atar.
+    golgeIsigi = /** @type {{x: number, y: number, z: number} | null} */ (null),
+    temasGolgesiOpaklik = 0.55,
   } = {},
 ) {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -435,7 +441,7 @@ export async function createBmo(
 
   const sun = new THREE.DirectionalLight('#ffffff', Math.PI * 1.2);
   sun.position.set(1.79, 5.06, 2.68);
-  sun.castShadow = true;
+  sun.castShadow = !golgeIsigi;
   sun.shadow.mapSize.set(2048, 2048);
   sun.shadow.camera.left = -golgeAlani;
   sun.shadow.camera.right = golgeAlani;
@@ -446,6 +452,24 @@ export async function createBmo(
   sun.shadow.bias = -4e-4;
   sun.shadow.normalBias = 0.02;
   scene.add(sun);
+
+  // Yalnızca gölge atan ışık. Şiddeti sıfır olduğu için sahneyi
+  // aydınlatmaz, ama gölge haritası yine de bu yönden hesaplanır.
+  if (golgeIsigi) {
+    const golgeKaynagi = new THREE.DirectionalLight('#ffffff', 0);
+    golgeKaynagi.position.set(golgeIsigi.x, golgeIsigi.y, golgeIsigi.z);
+    golgeKaynagi.castShadow = true;
+    golgeKaynagi.shadow.mapSize.set(2048, 2048);
+    golgeKaynagi.shadow.camera.left = -golgeAlani;
+    golgeKaynagi.shadow.camera.right = golgeAlani;
+    golgeKaynagi.shadow.camera.top = golgeAlani * 0.87;
+    golgeKaynagi.shadow.camera.bottom = -golgeAlani * 0.87;
+    golgeKaynagi.shadow.camera.near = 1;
+    golgeKaynagi.shadow.camera.far = 14;
+    golgeKaynagi.shadow.bias = -4e-4;
+    golgeKaynagi.shadow.normalBias = 0.02;
+    scene.add(golgeKaynagi);
+  }
 
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(8, 8), new THREE.ShadowMaterial({ opacity: 0.26 }));
   ground.rotation.x = -Math.PI / 2;
@@ -600,7 +624,7 @@ export async function createBmo(
     new THREE.MeshBasicMaterial({
       map: canvasTexture(drawContactShadow(), renderer),
       transparent: true,
-      opacity: 0.55,
+      opacity: temasGolgesiOpaklik,
       depthWrite: false,
     }),
   );

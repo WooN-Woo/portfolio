@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { games, projects } from "@/content/site";
+import { games, profile, projects, skills } from "@/content/site";
 import { createBmo } from "./bmoCekirdek";
 import { createDefter } from "./defter";
 
@@ -24,10 +24,30 @@ const DIKEY_HIZA = 0.74;
 const EV_UZAKLIK = 1.25;
 const EV_KAYDIRMA = { x: 0.28, y: 0 };
 
-/** Sayfa bu kadar yerleşmişse kartuş görünür olur. */
-const YERLESME_PAYI = 0.14;
-
 const sinirla = (deger: number) => Math.min(1, Math.max(0, deger));
+
+/** Defterin dış kapağı. */
+const KAPAK = {
+  ad: profile.name,
+  unvan: profile.role,
+  yardim: [
+    "kaydır — sayfaları çevir",
+    "kartuşa tıkla — projeyi aç",
+    "B ya da Esc — geri dön",
+  ],
+};
+
+/** İlk açılım: kim olduğum. */
+const HAKKIMDA = {
+  ad: "Hakkımda",
+  yil: profile.location,
+  ozet: profile.intro,
+  kunye: [profile.email, profile.githubLabel],
+  kartus: false,
+  ustBaslik: "merhaba",
+  girisYazisi: profile.headline,
+  etiketler: skills[0]?.items.slice(0, 5) ?? [],
+};
 
 type Icerik = {
   ad: string;
@@ -121,22 +141,28 @@ export function BmoSahne() {
 
     const bekle = (ms: number) => new Promise((coz) => setTimeout(coz, ms));
 
-    const kartuslariYerlestir = (aktif: number) => {
+    /**
+     * Kartuşu açık sayfanın yuvasına oturtur. Sayfa çevrilirken kartuş
+     * küçülerek kayboluyor: sabit boyda kalsaydı çevrilen sayfanın içinden
+     * geçer, sonra da birden belirirdi.
+     */
+    const kartuslariYerlestir = (proje: number, yerlesme: number) => {
       if (!bmo || !defter) return;
       const yer = defter.kartusYeri();
+      const buyume = yerlesme * yerlesme * (3 - 2 * yerlesme);
       bmo.carts.forEach((cart, sira) => {
         if (cart.flying) return;
-        const gorunur = sira === aktif && durum === "idle";
-        cart.group.visible = gorunur;
-        if (!gorunur) {
-          // Görünmeyen kartuş kadrajın dışına alınıyor ki tıklamaya da takılmasın
+        const etkin = sira === proje && durum === "idle" && buyume > 0.02;
+        cart.group.visible = etkin;
+        if (!etkin) {
+          // Görünmeyen kartuş kadrajın dışına alınıyor ki tıklamaya takılmasın
           cart.rest.position.set(0, -50, 0);
           return;
         }
         cart.rest.position.copy(yer.konum);
         cart.rest.tilt.copy(yer.yon);
         cart.rest.face.copy(yer.yon);
-        cart.rest.scale = yer.olcek;
+        cart.rest.scale = yer.olcek * buyume;
       });
     };
 
@@ -145,11 +171,9 @@ export function BmoSahne() {
       const kutu = iz.getBoundingClientRect();
       const yol = kutu.height - window.innerHeight;
       const ilerleme = yol > 0 ? sinirla(-kutu.top / yol) : 0;
-      defter.setIlerleme(ilerleme);
-
-      const nokta = ilerleme * (defter.acilimSayisi - 1);
-      const yakin = Math.round(nokta);
-      kartuslariYerlestir(Math.abs(nokta - yakin) < YERLESME_PAYI ? yakin : -1);
+      const sayfa = defter.setIlerleme(ilerleme);
+      // Açılım 0 "hakkımda", kartuşlar ondan sonra başlıyor
+      kartuslariYerlestir(sayfa.acilim - 1, sayfa.yerlesme);
     };
 
     const ekraniGoster = (icerik: Icerik) => {
@@ -221,6 +245,9 @@ export function BmoSahne() {
         evKaydirma: EV_KAYDIRMA,
         disKartusYerlesimi: true,
         golgeAlani: 4.8,
+        // Odadaki ışık pencereden, yani arkadan geliyor: gölge öne düşsün
+        golgeIsigi: { x: 1.6, y: 5.6, z: -2.2 },
+        temasGolgesiOpaklik: 0.62,
         projects: ICERIK.map((icerik) => ({
           name: icerik.ad,
           shortName: icerik.kisaAd,
@@ -240,13 +267,17 @@ export function BmoSahne() {
       defter = createDefter({
         scene: kurulan.scene,
         renderer: kurulan.renderer,
-        projeler: ICERIK.map((icerik) => ({
-          ad: icerik.ad,
-          yil: icerik.yil,
-          ozet: icerik.ozet,
-          kunye: icerik.kunye,
-          etiketler: icerik.etiketler,
-        })),
+        kapak: KAPAK,
+        projeler: [
+          HAKKIMDA,
+          ...ICERIK.map((icerik) => ({
+            ad: icerik.ad,
+            yil: icerik.yil,
+            ozet: icerik.ozet,
+            kunye: icerik.kunye,
+            etiketler: icerik.etiketler,
+          })),
+        ],
       });
       guncelle();
     })();
@@ -277,7 +308,7 @@ export function BmoSahne() {
       <div
         className="bmo-iz"
         ref={izRef}
-        style={{ height: `${ICERIK.length * 100}vh` }}
+        style={{ height: `${(ICERIK.length + 2) * 100}vh` }}
       >
         <div className="bmo-sahne">
           <div className="bmo-oda">

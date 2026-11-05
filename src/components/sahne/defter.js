@@ -149,7 +149,7 @@ function lekeTuvali() {
 }
 
 // ---------------------------------------------------------------- defter
-export function createDefter({ scene, renderer, projeler }) {
+export function createDefter({ scene, renderer, projeler, kapak }) {
   const kok = new THREE.Group();
   kok.position.set(YER.x, 0, YER.z);
   kok.rotation.y = -0.16;
@@ -187,7 +187,8 @@ export function createDefter({ scene, renderer, projeler }) {
   const tabla = tahta(KITAP_EN + 0.14, 0.055, SAYFA.boy * 0.92, RENK.sehpa, 0.025);
   tabla.rotation.x = Math.PI / 2 - YATIKLIK;
   tabla.position.set(0, merkezY - 0.05, merkezZ);
-  tabla.position.addScaledVector(normal, -0.075);
+  // defterin arka yüzünün gerisinde kalmalı, yoksa sayfalara giriyor
+  tabla.position.addScaledVector(normal, -0.125);
   sehpa.add(tabla);
 
   const cita = tahta(KITAP_EN + 0.14, 0.095, 0.065, RENK.sehpaKoyu, 0.028);
@@ -208,26 +209,36 @@ export function createDefter({ scene, renderer, projeler }) {
   kitap.position.set(0, merkezY, merkezZ);
   kok.add(kitap);
 
-  // kapak: sayfalardan biraz büyük, yumuşak köşeli
-  const kapak = new THREE.Mesh(
-    new RoundedBoxGeometry(KITAP_EN + 0.11, SAYFA.boy + 0.11, 0.055, 3, 0.035),
-    toon(RENK.kapak),
-  );
-  kapak.position.z = -0.045;
-  kitap.add(kapak);
-  addOutline(kapak, 0.016);
+  // Kapak iki yarım: defter kapalıyken sol yarım görünmüyor, çünkü kapalı
+  // bir defterde her şey ciltten sağa yığılı durur.
+  const YARIM_EN = SAYFA.en + 0.055;
+  function kapakYarimi(yon) {
+    const mesh = new THREE.Mesh(
+      new RoundedBoxGeometry(YARIM_EN, SAYFA.boy + 0.11, 0.055, 3, 0.035),
+      toon(RENK.kapak),
+    );
+    mesh.position.set((yon * YARIM_EN) / 2, 0, -0.045);
+    kitap.add(mesh);
+    addOutline(mesh, 0.016);
+    return mesh;
+  }
+  const kapakSol = kapakYarimi(-1);
+  const kapakSag = kapakYarimi(1);
 
   // kâğıt destesi: iki yanda kalınlık versin, kenarları görünsün
-  for (const yon of [-1, 1]) {
-    const deste = new THREE.Mesh(
+  function desteYarimi(yon) {
+    const mesh = new THREE.Mesh(
       new RoundedBoxGeometry(SAYFA.en - 0.015, SAYFA.boy - 0.02, 0.04, 2, 0.012),
       toon(RENK.kagitKoyu),
     );
     // kutunun ön yüzü sayfa düzleminin arkasında kalmalı, yoksa sayfayı örter
-    deste.position.set((yon * SAYFA.en) / 2, 0, -0.032);
-    kitap.add(deste);
-    addOutline(deste, 0.01);
+    mesh.position.set((yon * SAYFA.en) / 2, 0, -0.032);
+    kitap.add(mesh);
+    addOutline(mesh, 0.01);
+    return mesh;
   }
+  const desteSol = desteYarimi(-1);
+  const desteSag = desteYarimi(1);
 
   // cilt: ortada ince bir şerit
   const cilt = new THREE.Mesh(
@@ -268,6 +279,29 @@ export function createDefter({ scene, renderer, projeler }) {
     kagitZemin(ctx, 'sol');
 
     const kenar = 72;
+
+    // Kartuşu olmayan açılım (hakkımda): yuva yerine düz yazı
+    if (proje.kartus === false) {
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = RENK.soluk;
+      ctx.font = `400 30px ${el}`;
+      ctx.fillText(proje.ustBaslik ?? '', kenar, 96);
+
+      ctx.fillStyle = RENK.murekkep;
+      ctx.font = `400 44px ${el}`;
+      const alt = satirlar(ctx, proje.girisYazisi ?? '', kenar, 150, DOKU.en - kenar * 2, 56);
+
+      ctx.fillStyle = RENK.soluk;
+      ctx.font = `400 32px ${el}`;
+      let satirY = alt + 40;
+      for (const etiket of (proje.etiketler ?? []).slice(0, 6)) {
+        if (satirY > DOKU.boy - 70) break;
+        ctx.fillText(`— ${etiket}`, kenar, satirY);
+        satirY += 42;
+      }
+      acilim.solDoku.needsUpdate = true;
+      return;
+    }
     const yuva = { x: kenar + 40, y: 190, en: DOKU.en - kenar * 2 - 80, boy: DOKU.boy - 480 };
 
     ctx.textBaseline = 'top';
@@ -348,7 +382,65 @@ export function createDefter({ scene, renderer, projeler }) {
     acilim.sagDoku.needsUpdate = true;
   }
 
+  /** Dış kapak: ad, unvan ve defterin nasıl gezileceği. */
+  const kapakTuval = document.createElement('canvas');
+  kapakTuval.width = DOKU.en;
+  kapakTuval.height = DOKU.boy;
+  const kapakDoku = canvasTexture(kapakTuval, renderer);
+
+  function kapakCiz() {
+    const ctx = kapakTuval.getContext('2d');
+    const el = elYazisi();
+    ctx.clearRect(0, 0, DOKU.en, DOKU.boy);
+
+    // deri kapak
+    ctx.fillStyle = RENK.kapak;
+    ctx.fillRect(0, 0, DOKU.en, DOKU.boy);
+    const isik = ctx.createLinearGradient(0, 0, DOKU.en, DOKU.boy);
+    isik.addColorStop(0, 'rgba(255, 228, 190, 0.16)');
+    isik.addColorStop(0.5, 'rgba(0, 0, 0, 0)');
+    isik.addColorStop(1, 'rgba(0, 0, 0, 0.18)');
+    ctx.fillStyle = isik;
+    ctx.fillRect(0, 0, DOKU.en, DOKU.boy);
+
+    // kenar boyunca kabartma çizgi
+    ctx.strokeStyle = 'rgba(255, 226, 182, 0.35)';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(44, 44, DOKU.en - 88, DOKU.boy - 88);
+
+    // isim plakası
+    const plaka = { x: 96, y: 210, en: DOKU.en - 192, boy: 300 };
+    ctx.fillStyle = '#f1e3c2';
+    ctx.fillRect(plaka.x, plaka.y, plaka.en, plaka.boy);
+    ctx.strokeStyle = 'rgba(60, 38, 20, 0.45)';
+    ctx.lineWidth = 5;
+    ctx.strokeRect(plaka.x, plaka.y, plaka.en, plaka.boy);
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = RENK.murekkep;
+    ctx.font = `400 74px ${el}`;
+    satirlar(ctx, kapak.ad, plaka.x + plaka.en / 2, plaka.y + 52, plaka.en - 60, 78);
+
+    ctx.fillStyle = RENK.soluk;
+    ctx.font = `400 36px ${el}`;
+    ctx.fillText(kapak.unvan, plaka.x + plaka.en / 2, plaka.y + 208);
+
+    // nasıl gezilir
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#f0ddb8';
+    ctx.font = `400 34px ${el}`;
+    let y = plaka.y + plaka.boy + 90;
+    for (const satir of kapak.yardim) {
+      ctx.fillText(satir, 110, y);
+      y += 52;
+    }
+
+    kapakDoku.needsUpdate = true;
+  }
+
   function hepsiniCiz() {
+    kapakCiz();
     for (const acilim of acilimlar) {
       solCiz(acilim);
       sagCiz(acilim);
@@ -465,31 +557,50 @@ export function createDefter({ scene, renderer, projeler }) {
   kok.add(temasGolgesi);
 
   // ---------------------------------------------------------------- akış
-  let sonIndeks = -1;
+  // Durumlar: 0 = defter kapalı (dış kapak görünür), 1 = ilk açılım,
+  // 2 = ikinci açılım... Aradaki değerlerde yaprak yarı çevrili durur.
+  const DURUM_SAYISI = toplam + 1;
+  let sonYaprak = -1;
+
+  /** Yaprağın ön yüzü: ilk yaprak dış kapak, sonrakiler sağ sayfalar. */
+  function yaprakOn(i) {
+    return i === 0 ? kapakDoku : acilimlar[i - 1].sagDoku;
+  }
 
   /**
-   * ilerleme 0–1 arası: 0 ilk açılım, 1 son açılım. Ara değerlerde sayfa
-   * yarı çevrilmiş durur, yani kaydırmayı birebir takip eder.
+   * ilerleme 0–1. Dönen değer kartuşun ne kadar yerleştiğini söylüyor:
+   * acilim -1 ise defter kapalı ya da sayfa çevriliyor demektir.
    */
   function setIlerleme(ilerleme) {
-    if (toplam < 2) return;
-    const nokta = Math.min(toplam - 1, Math.max(0, ilerleme * (toplam - 1)));
-    const indeks = Math.min(toplam - 2, Math.floor(nokta));
-    const pay = nokta - indeks;
+    const adim = Math.min(DURUM_SAYISI - 1, Math.max(0, ilerleme * (DURUM_SAYISI - 1)));
+    const i = Math.min(DURUM_SAYISI - 2, Math.floor(adim));
+    const pay = adim - i;
 
-    // Dokuyu değiştirirken malzemeye needsUpdate verilmiyor: aynı türde bir
-    // doku takıldığı için gölgelendirici yeniden derlenmiyor, takılma olmuyor.
-    if (indeks !== sonIndeks) {
-      sonIndeks = indeks;
-      solSayfa.material.map = acilimlar[indeks].solDoku;
-      sagSayfa.material.map = acilimlar[indeks + 1].sagDoku;
-      cevirenOn.material.map = acilimlar[indeks].sagDoku;
-      cevirenArka.material.map = acilimlar[indeks + 1].solDoku;
+    if (i !== sonYaprak) {
+      sonYaprak = i;
+      cevirenOn.material.map = yaprakOn(i);
+      cevirenArka.material.map = acilimlar[i].solDoku;
+      sagSayfa.material.map = acilimlar[i].sagDoku;
+      if (i > 0) solSayfa.material.map = acilimlar[i - 1].solDoku;
     }
+
+    // Defter kapalıyken sol yarım yok: kapalı bir defterde her şey ciltten
+    // sağa yığılıdır. Kapak devrilmeye başlayınca sol yarım ortaya çıkar.
+    const kapali = i === 0;
+    solSayfa.visible = !kapali;
+    desteSol.visible = !kapali;
+    kapakSol.visible = !kapali || pay > 0.45;
+    // Kapalı defter yalnızca sağ yarımdan ibaret; sehpanın ortasında dursun
+    // diye sola kaydırılıyor, kapak devrildikçe yerine oturuyor.
+    kitap.position.x = kapali ? (-YARIM_EN / 2) * (1 - pay) : 0;
 
     const aci = Math.PI * pay;
     bukumUygula(onGeo, aci);
     bukumUygula(arkaGeo, aci);
+
+    const yakin = Math.round(adim);
+    const yerlesme = 1 - Math.min(1, Math.abs(adim - yakin) / 0.25);
+    return { acilim: yakin - 1, yerlesme };
   }
 
   setIlerleme(0);
