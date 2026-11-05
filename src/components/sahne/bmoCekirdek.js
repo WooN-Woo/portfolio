@@ -4,6 +4,10 @@
 //
 // Oda, kartuşlar, ses ve arka plana göre kamera hizalama dahil değildir.
 // Onların orijinali: original/bmo.pretty.js
+//
+// Zoom orijinaldeki kamera yolunun aynısıdır, ama kartuşa bağlı değildir:
+//   tıklama: onButton içinde bmo.zoomIn() çağır (bkz. index.html)
+//   scroll:  bmo.setZoom(0-1 arası ilerleme) çağır (bkz. scroll.html)
 
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
@@ -46,8 +50,13 @@ const COLOR = {
 };
 
 const EASE = {
+  linear: (t) => t,
   out: (t) => 1 - (1 - t) ** 3,
+  inOut: (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2),
 };
+
+const ZOOM_IN_MS = 1300;
+const ZOOM_OUT_MS = 1000;
 
 const vec3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 
@@ -288,13 +297,20 @@ function drawContactShadow() {
 }
 
 // ---------------------------------------------------------------- ana fonksiyon
-export function createBmo(canvas) {
+export function createBmo(canvas, { onButton, evUzaklik = 1, evKaydirma = { x: 0, y: 0 } } = {}) {
+  // Bu projeye özel ek (orijinalde yok): BMO tuvalin tam ortasında değil,
+  // arka plandaki masanın boş köşesinde dursun diye kamera yana kaydırılıyor.
+  // Kaydırma görünen alanın oranı cinsinden; böylece ekran oranı değişince
+  // BMO masadan kaymıyor. Zoom ilerledikçe kaydırma kendiliğinden sıfırlanıyor,
+  // çünkü kamera ekranın tam karşısına gidiyor.
+  const kaydirma = evKaydirma;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NoToneMapping;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.setClearColor(0, 0);
 
   const scene = new THREE.Scene();
@@ -568,22 +584,71 @@ export function createBmo(canvas) {
   // ------------------------------------------------------------- tween
   const tweens = new Set();
   function tween(ms, ease, update) {
-    tweens.add({ start: performance.now(), ms, ease, update });
+    if (reducedMotion || ms <= 0) {
+      update(1);
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      tweens.add({ start: performance.now(), ms, ease, update, resolve });
+    });
   }
 
   // ------------------------------------------------------------- kamera
   const target = vec3(0, BODY_H * 0.45, 0);
   const viewDirection = vec3(0, Math.tan(THREE.MathUtils.degToRad(15)), 1).normalize();
+  const homePosition = vec3();
+  const homeTarget = vec3();
+  const lookPoint = vec3();
+  const zoom = { progress: 0, run: 0 }; // 0: BMO'nun tamamı, 1: yalnızca ekran
+  let paused = false;
+
+  // Kamera BMO'nun baktığı yönde, ekran görüntüyü tamamen kaplayacak kadar
+  // yakına gelir. Geniş ve dar pencerede kırpılan kenar değişir, boşluk kalmaz.
+  function screenView() {
+    const center = body.localToWorld(vec3(0, SCREEN.y, FRONT_Z + 0.0035));
+    const facing = vec3(0, 0, 1).applyQuaternion(root.quaternion);
+    const tanHalfFov = Math.tan(THREE.MathUtils.degToRad(FOV / 2));
+    const distance = (Math.min(SCREEN.h, SCREEN.w / camera.aspect) / (2 * tanHalfFov)) * 0.985;
+    return { position: center.clone().addScaledVector(facing, distance), target: center };
+  }
+
+  // Kamera düz gitmez, yolun ortasında hafifçe yükselip ekrana iner.
+  function applyZoom() {
+    const t = EASE.inOut(zoom.progress);
+    const end = screenView();
+    camera.position.lerpVectors(homePosition, end.position, t);
+    camera.position.y += Math.sin(Math.PI * t) * 0.12;
+    lookPoint.lerpVectors(homeTarget, end.target, t);
+    camera.lookAt(lookPoint);
+  }
+
+  // Yarıda kesilirse bulunduğu yerden devam eder, kalan yol kadar sürer.
+  function flyTo(to, ms) {
+    const run = ++zoom.run;
+    const from = zoom.progress;
+    return tween(ms * Math.abs(to - from), EASE.linear, (p) => {
+      if (run !== zoom.run) return;
+      zoom.progress = from + (to - from) * p;
+      applyZoom();
+    });
+  }
+
   function resize() {
     const w = Math.max(1, canvas.clientWidth);
     const h = Math.max(1, canvas.clientHeight);
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     // Dar ekranda kollar taşmasın diye uzaklaşır
-    const distance = 4.6 * Math.max(1, 1 / camera.aspect);
-    camera.position.copy(target).addScaledVector(viewDirection, distance);
-    camera.lookAt(target);
+    const distance = 4.6 * Math.max(1, 1 / camera.aspect) * evUzaklik;
+    const gorunenBoy = 2 * distance * Math.tan(THREE.MathUtils.degToRad(FOV / 2));
+    homeTarget
+      .copy(target)
+      .add(vec3(kaydirma.x * gorunenBoy * camera.aspect, kaydirma.y * gorunenBoy, 0));
+    homePosition.copy(homeTarget).addScaledVector(viewDirection, distance);
+    applyZoom();
     camera.updateProjectionMatrix();
+    // Duraklatılmışken yeniden boyutlanırsa görüntü bozuk kalmasın
+    if (paused) renderer.render(scene, camera);
   }
 
   // ------------------------------------------------------------- etkileşim
@@ -614,6 +679,7 @@ export function createBmo(canvas) {
   }
 
   function onPointerDown(event) {
+    if (zoom.progress > 0) return;
     const mesh = pick(event);
     if (mesh) {
       pressed = mesh;
@@ -630,13 +696,16 @@ export function createBmo(canvas) {
     const name = mesh.userData.button;
     const startled = name === 'screen' || name === 'b' || name === 'triangle';
     setMood(startled ? 'surprised' : 'happy', startled ? 900 : 1000);
+    onButton?.(name);
   }
 
   // Gözler sayfanın neresinde olursa olsun imleci takip eder
   function onPointerMove(event) {
     pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
     pointer.y = (event.clientY / window.innerHeight) * 2 - 1;
-    if (event.target === canvas) canvas.style.cursor = pick(event) ? 'pointer' : '';
+    if (event.target === canvas) {
+      canvas.style.cursor = zoom.progress === 0 && pick(event) ? 'pointer' : '';
+    }
   }
 
   canvas.addEventListener('pointerdown', onPointerDown);
@@ -644,7 +713,6 @@ export function createBmo(canvas) {
   window.addEventListener('pointermove', onPointerMove, { passive: true });
 
   // ------------------------------------------------------------- döngü
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let nextBlink = performance.now() + 2500;
   let blinkStart = -1;
   let last = performance.now();
@@ -659,7 +727,10 @@ export function createBmo(canvas) {
     for (const t of tweens) {
       const p = Math.min(1, (now - t.start) / t.ms);
       t.update(t.ease(p));
-      if (p >= 1) tweens.delete(t);
+      if (p >= 1) {
+        tweens.delete(t);
+        t.resolve();
+      }
     }
 
     if (!reducedMotion) {
@@ -695,7 +766,7 @@ export function createBmo(canvas) {
     }
 
     if (face.dirty) drawFace();
-    renderer.render(scene, camera);
+    if (!paused) renderer.render(scene, camera);
   }
 
   const observer = new ResizeObserver(resize);
@@ -710,6 +781,24 @@ export function createBmo(canvas) {
     // çalan sesin genliğinden geliyor.
     setTalk(level) {
       face.talkTarget = level;
+    },
+    // Tıklama gibi tek seferlik tetikleyiciler için. Kamera varınca biter.
+    zoomIn() {
+      return flyTo(1, ZOOM_IN_MS);
+    },
+    zoomOut() {
+      paused = false;
+      return flyTo(0, ZOOM_OUT_MS);
+    },
+    // Scroll için: 0 BMO'nun tamamı, 1 yalnızca ekran.
+    setZoom(progress) {
+      zoom.run++;
+      zoom.progress = Math.min(1, Math.max(0, progress));
+      applyZoom();
+    },
+    // Ekranı HTML katmanı kapladığında boşuna çizim yapılmasın diye.
+    setPaused(value) {
+      paused = value;
     },
     dispose() {
       cancelAnimationFrame(frame);

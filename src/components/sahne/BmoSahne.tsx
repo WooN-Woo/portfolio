@@ -2,69 +2,96 @@
 
 import { useEffect, useRef } from "react";
 import { createBmo } from "./bmoCekirdek";
+import { TvEkran } from "./TvEkran";
 
 /**
- * Masa sahnesi.
+ * Masa sahnesi ve BMO'nun ekranına giriş.
  *
- * Arkada elle çizilmiş tek bir resim var; oda 3B kurulmuyor.
- * BMO ise gerçek 3B ve kendi saydam tuvalinde çiziliyor. Tuval, resmin
- * masa üstündeki boş köşesine denk gelen kutuya yerleştiriliyor —
- * böylece ekran hangi orana gelirse gelsin BMO masadan kaymıyor.
+ * Kurgu: arkada elle çizilmiş tek bir resim, önünde gerçek 3B BMO.
+ * Sayfa kaydıkça kamera BMO'nun ekranına doğru uçuyor. Oda düz bir resim
+ * olduğu için kamerayla birlikte hareket edemez — o yüzden zoom başlar
+ * başlamaz sönüyor. Yol bitince ekranın yerini gerçek HTML katmanı alıyor,
+ * böylece yazılar net ve seçilebilir kalıyor.
  */
-
-/** Arka plan resminin ölçüsü. Resim değişirse burası da değişir. */
-const RESIM = { en: 1672, boy: 941 };
 
 /** Geniş ekranda resmin altı/üstü kırpılır; kırpma masanın lehine kaysın. */
 const DIKEY_HIZA = 0.74;
 
-/** BMO'nun resim üzerindeki kutusu (0–1 arası oranlar). */
-const BMO_KUTU = { x: 0.095, y: 0.13, en: 0.39, boy: 0.71 };
+/** BMO'nun kadrajdaki yeri — masanın boş köşesine denk gelsin diye. */
+const EV_UZAKLIK = 1.05;
+const EV_KAYDIRMA = { x: 0.19, y: 0.12 };
+
+/** Oda hangi noktada tamamen sönsün (0–1 arası kaydırma ilerlemesi). */
+const ODA_SONME = 0.33;
+
+/** HTML ekran katmanının devreye girdiği nokta. */
+const TV_BASLANGIC = 0.92;
+
+const sinirla = (deger: number) => Math.min(1, Math.max(0, deger));
 
 export function BmoSahne() {
-  const sarmalRef = useRef<HTMLDivElement>(null);
+  const izRef = useRef<HTMLDivElement>(null);
   const tuvalRef = useRef<HTMLCanvasElement>(null);
+  const arkaRef = useRef<HTMLDivElement>(null);
+  const tvRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const iz = izRef.current;
     const tuval = tuvalRef.current;
-    if (!tuval) return;
+    const arka = arkaRef.current;
+    const tv = tvRef.current;
+    if (!iz || !tuval || !arka || !tv) return;
 
-    // BMO'yu kutusuna oturt: resmin ekranda kapladığı alanı hesaplayıp
-    // kutunun oranlarını piksele çeviriyoruz.
-    const yerlestir = () => {
-      const ekranEn = window.innerWidth;
-      const ekranBoy = window.innerHeight;
+    const bmo = createBmo(tuval, {
+      evUzaklik: EV_UZAKLIK,
+      evKaydirma: EV_KAYDIRMA,
+    });
 
-      const olcek = Math.max(ekranEn / RESIM.en, ekranBoy / RESIM.boy);
-      const resimEn = RESIM.en * olcek;
-      const resimBoy = RESIM.boy * olcek;
-      const sol = (ekranEn - resimEn) / 2;
-      const ust = (ekranBoy - resimBoy) * DIKEY_HIZA;
+    const guncelle = () => {
+      const kutu = iz.getBoundingClientRect();
+      const yol = kutu.height - window.innerHeight;
+      const ilerleme = yol > 0 ? sinirla(-kutu.top / yol) : 0;
 
-      tuval.style.left = `${sol + BMO_KUTU.x * resimEn}px`;
-      tuval.style.top = `${ust + BMO_KUTU.y * resimBoy}px`;
-      tuval.style.width = `${BMO_KUTU.en * resimEn}px`;
-      tuval.style.height = `${BMO_KUTU.boy * resimBoy}px`;
+      bmo.setZoom(ilerleme);
+      arka.style.opacity = String(1 - sinirla(ilerleme / ODA_SONME));
+
+      const tvGorunur = sinirla((ilerleme - TV_BASLANGIC) / (1 - TV_BASLANGIC));
+      tv.style.opacity = String(tvGorunur);
+      tv.style.visibility = tvGorunur > 0 ? "visible" : "hidden";
+      tv.style.pointerEvents = tvGorunur > 0.9 ? "auto" : "none";
+      // Ekran tamamen kapandığında 3B çizimi durdur, boşuna işlem olmasın
+      bmo.setPaused(tvGorunur === 1);
     };
 
-    yerlestir();
-    window.addEventListener("resize", yerlestir);
-
-    const bmo = createBmo(tuval);
+    guncelle();
+    window.addEventListener("scroll", guncelle, { passive: true });
+    window.addEventListener("resize", guncelle);
 
     return () => {
-      window.removeEventListener("resize", yerlestir);
+      window.removeEventListener("scroll", guncelle);
+      window.removeEventListener("resize", guncelle);
       bmo.dispose();
     };
   }, []);
 
   return (
-    <div className="sahne" ref={sarmalRef}>
-      <div
-        className="sahne-resim"
-        style={{ backgroundPosition: `center ${DIKEY_HIZA * 100}%` }}
-      />
-      <canvas className="bmo-tuval" ref={tuvalRef} />
+    <div className="bmo-iz" ref={izRef}>
+      <div className="bmo-sahne">
+        <div className="bmo-oda">
+          <div
+            className="bmo-oda-arka"
+            ref={arkaRef}
+            style={{ backgroundPosition: `center ${DIKEY_HIZA * 100}%` }}
+          />
+          <canvas className="bmo-tuval" ref={tuvalRef} />
+        </div>
+
+        <div className="bmo-tv" ref={tvRef}>
+          <div className="bmo-tv-ic">
+            <TvEkran />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
