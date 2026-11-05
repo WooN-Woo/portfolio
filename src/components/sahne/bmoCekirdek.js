@@ -406,8 +406,9 @@ export async function createBmo(
     // kendiliğinden sıfırlanır, çünkü kamera ekranın tam karşısına gider.
     evUzaklik = 1,
     evKaydirma = { x: 0, y: 0 },
-    // Kartuşların yerini dışarısı belirliyorsa (defterin sayfasına
-    // oturtuluyorlar) çekirdeğin kendi yerleşimi devre dışı kalır.
+    // Kartuşların yerini dışarısı belirliyorsa (masaüstünde defterin
+    // sayfasına oturtuluyorlar) çekirdeğin kendi yerleşimi devre dışı kalır.
+    // Telefonda defter yok, kartuşları çekirdek diziyor.
     disKartusYerlesimi = false,
     // Sahnede BMO'dan başka nesne de var (defter, sehpa). Gölge kamerasının
     // kapsadığı alan onları da içersin diye dışarıdan verilebiliyor.
@@ -1010,10 +1011,12 @@ export async function createBmo(
       maxY: Math.max(...points.map((p) => p.y)),
     };
 
-    const crowding = Math.min(1, 6 / carts.length);
+    // Bu projede altı kartuş var; orijinaldeki beşlik dizilim dar telefonda
+    // kenarlardan taşıyordu, kalabalık payı ve dikeydeki boy biraz kısıldı.
+    const crowding = Math.min(1, 5 / carts.length);
     const portrait = w / h < 0.95;
     const size = portrait
-      ? clamp(Math.min(box.minY * 0.8, w * 0.32), 70, 150) * crowding
+      ? clamp(Math.min(box.minY * 0.8, w * 0.28), 70, 150) * crowding
       : clamp((box.maxY - box.minY) * 0.5, 90, 170) * crowding;
     const slots = portrait ? rowSlots(size, box, w) : columnSlots(size, box);
 
@@ -1024,7 +1027,7 @@ export async function createBmo(
 
     carts.forEach((cart, i) => {
       const slot = slots[i];
-      const x = clamp(slot.x, size * 0.45, w - size * 0.45);
+      const x = clamp(slot.x, size * 0.56, w - size * 0.56);
       const y = clamp(slot.y, size * 0.55, h - size * 0.55);
       const depth = distance * 0.8 + (slot.back ?? 0);
       const ray = vec3((x / w) * 2 - 1, -(y / h) * 2 + 1, 0.5)
@@ -1311,8 +1314,13 @@ export async function createBmo(
       zoom.progress = Math.min(1, Math.max(0, progress));
       applyZoom();
     },
-    // Kadrajı çalışma anında değiştirir. Telefonda kamera defterin tek
-    // sayfasına odaklanıp kaydırmayla sayfalar arasında geziniyor.
+    // Kartuş yerleşimini çekirdeğe geri devreder (telefon düzeni).
+    setDisKartusYerlesimi(deger) {
+      disKartusYerlesimi = deger;
+      resize();
+    },
+    // Kadrajı çalışma anında değiştirir; ekran yatay/dikey arasında
+    // geçince düzen yeniden kurulmadan kamera yerine oturuyor.
     setEvKadraj(yeni) {
       if (yeni.uzaklik !== undefined) evUzaklik = yeni.uzaklik;
       if (yeni.kaydirma) evKaydirma = yeni.kaydirma;

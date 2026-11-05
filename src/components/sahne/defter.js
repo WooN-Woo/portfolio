@@ -663,6 +663,11 @@ export function createDefter({ scene, renderer, projeler, kapak, dokuOlcek = 1 }
     return kitap.localToWorld(new THREE.Vector3((taraf * SAYFA.en) / 2, 0, 0.02));
   }
 
+  /** Telefon düzeninde defter sahneden kalkıyor. */
+  function setGorunur(deger) {
+    kok.visible = deger;
+  }
+
   function dispose() {
     scene.remove(kok);
     kok.traverse((o) => {
@@ -679,6 +684,7 @@ export function createDefter({ scene, renderer, projeler, kapak, dokuOlcek = 1 }
     setIlerleme,
     kartusYeri,
     sayfaMerkezi,
+    setGorunur,
     acilimSayisi: toplam,
     durumSayisi: DURUM_SAYISI,
     dispose,

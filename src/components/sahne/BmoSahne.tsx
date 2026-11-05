@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import { games, profile, projects, skills } from "@/content/site";
-import { BMO_HEDEF_Y, createBmo } from "./bmoCekirdek";
-import { SAYFA, createDefter } from "./defter";
+import { createBmo } from "./bmoCekirdek";
+import { createDefter } from "./defter";
 
 /**
  * Masa sahnesi.
@@ -26,51 +26,6 @@ const EV_KAYDIRMA = { x: 0.28, y: 0 };
 
 /** Bu orandan darsa dikey (telefon) düzenine geçiliyor. */
 const DIKEY_ESIK = 0.95;
-
-/** Dikeyde sayfa kadrajda biraz aşağıda dursun: altta kalan zemin azalsın. */
-const DIKEY_PAY = 0.075;
-
-const GORUS_ACISI = 30;
-const YARIM_ACI_TAN = Math.tan((GORUS_ACISI / 2) * (Math.PI / 180));
-
-/**
- * Kameranın bir dünya noktasını kadrajın ortasına alması için gereken
- * kaydırma. Çekirdek kaydırmayı görünen alanın oranı cinsinden istiyor.
- */
-function kadrajHesapla(
-  oran: number,
-  uzaklik: number,
-  hedef: { x: number; y: number },
-  dikeyPay = 0,
-) {
-  const mesafe = 4.6 * Math.max(1, 1 / oran) * uzaklik;
-  const gorunenBoy = 2 * mesafe * YARIM_ACI_TAN;
-  return {
-    uzaklik,
-    kaydirma: {
-      x: hedef.x / (gorunenBoy * oran),
-      y: (hedef.y - BMO_HEDEF_Y) / gorunenBoy + dikeyPay,
-    },
-  };
-}
-
-/**
- * Sayfalar arası geçişi keskinleştiren eğri. Kamera iki sayfa arasında düz
- * bir hızla gezerse kaydırmanın büyük bölümünde iki sayfa da yarım kalıyor;
- * bu eğri ara bölgeden hızlı geçip duraklarda bekliyor.
- */
-function keskinGecis(t: number) {
-  const k = Math.min(1, Math.max(0, (t - 0.5) * 2.6 + 0.5));
-  return k * k * k * (k * (k * 6 - 15) + 10);
-}
-
-/** Dikeyde tek sayfa ekrana sığacak kadar uzaklık. */
-function dikeyUzaklik(oran: number) {
-  const gorunenEn = SAYFA.en * 1.24;
-  const gorunenBoy = gorunenEn / oran;
-  const mesafe = gorunenBoy / (2 * YARIM_ACI_TAN);
-  return mesafe / (4.6 * Math.max(1, 1 / oran));
-}
 
 const sinirla = (deger: number) => Math.min(1, Math.max(0, deger));
 
@@ -179,6 +134,9 @@ export function BmoSahne() {
   const izRef = useRef<HTMLDivElement>(null);
   const tuvalRef = useRef<HTMLCanvasElement>(null);
   const tvRef = useRef<HTMLDivElement>(null);
+  const icRef = useRef<HTMLDivElement>(null);
+  const basligiRef = useRef<HTMLDivElement>(null);
+  const ipucuRef = useRef<HTMLParagraphElement>(null);
   const gorselRef = useRef<HTMLImageElement>(null);
   const adRef = useRef<HTMLHeadingElement>(null);
   const ozetRef = useRef<HTMLParagraphElement>(null);
@@ -269,18 +227,18 @@ export function BmoSahne() {
      */
     // Telefonda ara durumda iki sayfa da yarım göründüğü için hizalama
     // daha çabuk devreye giriyor.
-    const hizalamaBeklemesi = () => (dikeyMi() ? 700 : 2000);
+    const hizalamaBeklemesi = () => 2000;
     const azHareket = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let hizalamaZamani = 0;
     let sonDikey: boolean | null = null;
 
     const ekranOrani = () => window.innerWidth / window.innerHeight;
     const dikeyMi = () => ekranOrani() < DIKEY_ESIK;
-    const durakSayisi = () =>
-      dikeyMi() ? 1 + 2 * SAYFALAR.length : SAYFALAR.length + 1;
+    // Dikeyde kaydırma yok, sahne tek ekranda duruyor.
+    const durakSayisi = () => (dikeyMi() ? 1 : SAYFALAR.length + 1);
 
     const izYuksekligiAyarla = () => {
-      const birim = durakSayisi() * (dikeyMi() ? 85 : 100);
+      const birim = durakSayisi() * 100;
       // svh destekleyen tarayıcıda ikinci atama geçerli olur; desteklemeyende
       // reddedilir ve vh'li değer kalır.
       iz.style.height = `${birim}vh`;
@@ -288,7 +246,7 @@ export function BmoSahne() {
     };
 
     const hizala = () => {
-      if (durum !== "idle") return;
+      if (durum !== "idle" || dikeyMi()) return;
       const yol = iz.offsetHeight - window.innerHeight;
       if (yol <= 0) return;
       const ust = iz.getBoundingClientRect().top + window.scrollY;
@@ -300,93 +258,100 @@ export function BmoSahne() {
       window.scrollTo({ top: hedef, behavior: azHareket ? "auto" : "smooth" });
     };
 
+    /**
+     * Düzen değişince sahneyi ona göre kuruyor.
+     *
+     * Dikey telefonda defter yok: iki sayfa yan yana sığmıyor, tek sayfaya
+     * odaklanmak da kaydırmayı yorucu yapıyordu. Onun yerine BMO ortada
+     * duruyor ve kartuşlar çevresine diziliyor; proje ekranı aynı akışla
+     * açılıyor. Hakkımda yazısı BMO'nun yön tuşuna dokununca geliyor.
+     */
+    const moduUygula = (dikey: boolean) => {
+      if (!defter || !bmo) return;
+      defter.setGorunur(!dikey);
+      bmo.setDisKartusYerlesimi(!dikey);
+      bmo.setEvKadraj(
+        dikey
+          ? { uzaklik: 1, kaydirma: { x: 0, y: 0.045 } }
+          : { uzaklik: EV_UZAKLIK, kaydirma: EV_KAYDIRMA },
+      );
+      if (dikey) {
+        // Kartuşların hepsi görünür olmalı; masaüstünde sayfadaki tek
+        // kartuş dışındakiler kadrajın dışına alınıyordu.
+        for (const cart of bmo.carts) cart.group.visible = true;
+      }
+      // Ad ve yönerge yalnızca telefonda: masaüstünde ikisi de defterde yazıyor
+      if (basligiRef.current) basligiRef.current.hidden = !dikey;
+      if (ipucuRef.current) ipucuRef.current.hidden = !dikey;
+    };
+
     const guncelle = () => {
       if (!defter || !bmo) return;
       const kutu = iz.getBoundingClientRect();
       const yol = kutu.height - window.innerHeight;
       const ilerleme = yol > 0 ? sinirla(-kutu.top / yol) : 0;
       const dikey = dikeyMi();
-      const adim = ilerleme * (durakSayisi() - 1);
 
-      if (!dikey) {
-        if (sonDikey !== false) {
-          bmo.setEvKadraj({ uzaklik: EV_UZAKLIK, kaydirma: EV_KAYDIRMA });
-          sonDikey = false;
-        }
-        const sayfa = defter.setIlerleme(adim / (defter.durumSayisi - 1));
-        // Açılım 0 "hakkımda", kartuşlar ondan sonra başlıyor
-        kartuslariYerlestir(sayfa.acilim - 1, sayfa.yerlesme);
-      } else {
-        sonDikey = true;
-
-        // Durak dizilişi: 0 kapak, sonra her açılım için önce kartuş
-        // sayfası sonra bilgi sayfası. Defterin kendi durumu yalnızca
-        // bilgi sayfasından sonraki durakta ilerliyor.
-        let defterDurum: number;
-        let yan: number;
-        if (adim <= 1) {
-          defterDurum = adim;
-          yan = adim;
-        } else {
-          const t = adim - 1;
-          const acilim = Math.floor(t / 2);
-          const kalan = t - acilim * 2;
-          defterDurum = 1 + acilim + Math.max(0, kalan - 1);
-          yan = kalan <= 1 ? kalan : 2 - kalan;
-        }
-        defter.setIlerleme(defterDurum / (defter.durumSayisi - 1));
-
-        const sol = defter.sayfaMerkezi(-1);
-        const sag = defter.sayfaMerkezi(1);
-        const bas = adim <= 1 ? sag : sol;
-        const son = adim <= 1 ? sol : sag;
-        const pay = keskinGecis(adim <= 1 ? adim : yan);
-        const oran = ekranOrani();
-        bmo.setEvKadraj(
-          kadrajHesapla(
-            oran,
-            dikeyUzaklik(oran),
-            {
-              x: bas.x + (son.x - bas.x) * pay,
-              y: bas.y + (son.y - bas.y) * pay,
-            },
-            DIKEY_PAY,
-          ),
-        );
-
-        // Kartuş yalnızca kartuş sayfası durağında (tek sayılı duraklar)
-        const solDurak = Math.max(1, 1 + 2 * Math.round((adim - 1) / 2));
-        const yerlesme = 1 - Math.min(1, Math.abs(adim - solDurak) / 0.3);
-        kartuslariYerlestir((solDurak - 1) / 2 - 1, yerlesme);
+      if (dikey !== sonDikey) {
+        sonDikey = dikey;
+        moduUygula(dikey);
       }
+
+      if (dikey) {
+        // Kaydırma yok: BMO ve kartuşlar tek ekranda duruyor
+        return;
+      }
+
+      const adim = ilerleme * (durakSayisi() - 1);
+      const sayfa = defter.setIlerleme(adim / (defter.durumSayisi - 1));
+      // Açılım 0 "hakkımda", kartuşlar ondan sonra başlıyor
+      kartuslariYerlestir(sayfa.acilim - 1, sayfa.yerlesme);
 
       window.clearTimeout(hizalamaZamani);
       hizalamaZamani = window.setTimeout(hizala, hizalamaBeklemesi());
     };
 
-    const ekraniGoster = (icerik: Icerik) => {
-      if (adRef.current) adRef.current.textContent = icerik.kisaAd;
-      if (ozetRef.current) ozetRef.current.textContent = icerik.ozet;
-      if (gorselRef.current) {
+    /** icerik null ise kartuşsuz "hakkımda" ekranı açılıyor. */
+    const ekraniGoster = (icerik: Icerik | null) => {
+      const ic = icRef.current;
+      if (ic) ic.dataset.sade = String(!icerik);
+      const gorsel = gorselRef.current?.parentElement;
+      if (gorsel) gorsel.hidden = !icerik;
+
+      if (adRef.current) adRef.current.textContent = icerik ? icerik.kisaAd : profile.name;
+      if (ozetRef.current) ozetRef.current.textContent = icerik ? icerik.ozet : profile.intro;
+      if (icerik && gorselRef.current) {
         gorselRef.current.src =
           icerik.gorsel ?? yedekGorsel(icerik.renk, icerik.yuzey, icerik.ad[0], 900, 1200);
         gorselRef.current.alt = `${icerik.ad} görseli`;
       }
       if (kunyeRef.current) {
+        const satirlar = icerik ? icerik.kunye : [profile.role, profile.location, profile.email];
         kunyeRef.current.replaceChildren(
-          ...icerik.kunye.map((satir) => {
+          ...satirlar.map((satir) => {
             const oge = document.createElement("li");
             oge.textContent = satir;
             return oge;
           }),
         );
       }
-      if (gitRef.current) gitRef.current.hidden = !icerik.baglanti;
+      if (gitRef.current) gitRef.current.hidden = !icerik?.baglanti;
       tv.dataset.cikiyor = "false";
       tv.hidden = false;
       // Ekran açıkken arkada sayfa çevrilmesin
       document.body.style.overflow = "hidden";
       geriRef.current?.focus({ preventScroll: true });
+    };
+
+    const hakkimdaAc = async () => {
+      if (!bmo || durum !== "idle") return;
+      durum = "takiliyor";
+      acik = null;
+      await bmo.zoomIn();
+      ekraniGoster(null);
+      durum = "ekran";
+      await bekle(400);
+      if (durum === "ekran") bmo.setPaused(true);
     };
 
     const ac = async (sira: number) => {
@@ -458,6 +423,11 @@ export function BmoSahne() {
         onPick: (sira: number) => {
           void ac(sira);
         },
+        // Defterin olmadığı telefon düzeninde hakkımda yazısına buradan
+        // ulaşılıyor; masaüstünde de kısa yol olarak duruyor.
+        onButton: (ad: string) => {
+          if (ad === "dpad" || ad === "screen") void hakkimdaAc();
+        },
       });
       if (birakildi) {
         kurulan.dispose();
@@ -522,6 +492,17 @@ export function BmoSahne() {
               style={{ backgroundPosition: `center ${DIKEY_HIZA * 100}%` }}
             />
             <canvas className="bmo-tuval" ref={tuvalRef} />
+
+            {/* Telefonda defter yok; ad ve yönerge sahnenin üstünde duruyor */}
+            <div className="bmo-baslik" ref={basligiRef} hidden>
+              <strong>{profile.name}</strong>
+              <span>{profile.role}</span>
+            </div>
+            <p className="bmo-ipucu" ref={ipucuRef} hidden>
+              kartuşa dokun — projeyi aç
+              <br />
+              BMO’nun tuşuna dokun — hakkımda
+            </p>
           </div>
         </div>
       </div>
@@ -534,7 +515,7 @@ export function BmoSahne() {
         aria-label="BMO'nun ekranı"
         hidden
       >
-        <div className="bmo-tv-ic">
+        <div className="bmo-tv-ic" ref={icRef}>
           <figure className="bmo-tv-gorsel">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img ref={gorselRef} alt="" />
