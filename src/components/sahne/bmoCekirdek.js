@@ -432,7 +432,8 @@ export async function createBmo(
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NoToneMapping;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // PCFSoftShadowMap three 0.187'de kaldırıldı; PCFShadowMap'e düşüyor.
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.setClearColor(0, 0);
 
   // Etiketler bir kez çizildiği için font ve görseller önce yüklenir
