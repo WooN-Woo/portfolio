@@ -79,7 +79,7 @@ function getToonRamp() {
   return toonRamp;
 }
 
-function toon(color, extra = {}) {
+export function toon(color, extra = {}) {
   return new THREE.MeshToonMaterial({ color, gradientMap: getToonRamp(), ...extra });
 }
 
@@ -120,7 +120,7 @@ function hullGeometry(geometry) {
   return hullGeometries.get(geometry);
 }
 
-function addOutline(object, thickness) {
+export function addOutline(object, thickness) {
   const meshes = [];
   object.traverse((o) => o.isMesh && !o.userData.hull && meshes.push(o));
   for (const mesh of meshes) {
@@ -132,7 +132,7 @@ function addOutline(object, thickness) {
 }
 
 // ---------------------------------------------------------------- 2D şekiller
-function roundedRectShape(w, h, r) {
+export function roundedRectShape(w, h, r) {
   const s = new THREE.Shape();
   const x = -w / 2;
   const y = -h / 2;
@@ -201,7 +201,7 @@ function bodyGeometry(w, h, d, corner, bevel) {
   return geometry;
 }
 
-function extruded(shape, depth, bevel, material) {
+export function extruded(shape, depth, bevel, material) {
   return new THREE.Mesh(
     new THREE.ExtrudeGeometry(shape, {
       depth,
@@ -237,7 +237,7 @@ function limb(points, radius, material) {
   return { group, end: curve.getPoint(1) };
 }
 
-function canvasTexture(canvas, renderer) {
+export function canvasTexture(canvas, renderer) {
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
@@ -776,6 +776,11 @@ export function createBmo(canvas, { onButton, evUzaklik = 1, evKaydirma = { x: 0
   frame = requestAnimationFrame(loop);
 
   return {
+    // Bu projeye özel ek: defter de aynı sahneye ekleniyor, böylece ışık,
+    // gölge ve perspektif BMO ile birebir aynı oluyor.
+    scene,
+    camera,
+    renderer,
     setMood,
     // 0-1 arası ses seviyesi konuşturur, null ağzı kapatır. Sitede bu değer
     // çalan sesin genliğinden geliyor.

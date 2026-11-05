@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Archivo, IBM_Plex_Mono, Source_Serif_4 } from "next/font/google";
+import { Archivo, IBM_Plex_Mono, Patrick_Hand, Source_Serif_4 } from "next/font/google";
 import { profile } from "@/content/site";
 import "./globals.css";
 
@@ -13,6 +13,15 @@ const archivo = Archivo({
 const sourceSerif = Source_Serif_4({
   subsets: ["latin", "latin-ext"],
   variable: "--font-serif",
+  display: "swap",
+});
+
+// Defterin sayfalarındaki el yazısı. Yazılar 3B dokuya çiziliyor, bu yüzden
+// font adı CSS değişkeninden okunup canvas'a veriliyor.
+const patrickHand = Patrick_Hand({
+  subsets: ["latin", "latin-ext"],
+  weight: "400",
+  variable: "--font-el",
   display: "swap",
 });
 
@@ -38,7 +47,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="tr" className={`${archivo.variable} ${sourceSerif.variable} ${plexMono.variable}`}>
+    <html lang="tr" className={`${archivo.variable} ${sourceSerif.variable} ${plexMono.variable} ${patrickHand.variable}`}>
       <body>
         {/* JavaScript kapalıysa hareketler devre dışı kalır, içerik olduğu gibi görünür. */}
         <noscript>

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { BmoSahne } from "@/components/sahne/BmoSahne";
-import { Pil } from "@/components/sahne/Pil";
 
 export const metadata: Metadata = {
   title: "Yeni tasarım",
@@ -8,10 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function YeniPage() {
-  return (
-    <>
-      <BmoSahne />
-      <Pil />
-    </>
-  );
+  return <BmoSahne />;
 }
