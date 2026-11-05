@@ -658,12 +658,12 @@ export function createBmoSound({
     sayfaBant = ctx.createBiquadFilter();
     sayfaBant.type = 'bandpass';
     sayfaBant.Q.value = 0.8;
-    sayfaBant.frequency.value = 1500;
+    sayfaBant.frequency.value = 2700;
 
     // Çıtırtı duygusu tiz uçtan geliyor; tepesi kesiliyor
     const tiz = ctx.createBiquadFilter();
     tiz.type = 'lowpass';
-    tiz.frequency.value = 2500;
+    tiz.frequency.value = 3400;
     tiz.Q.value = 0.7;
 
     sayfaKazanc = ctx.createGain();
@@ -698,7 +698,11 @@ export function createBmoSound({
     sayfaKazanc.gain.setTargetAtTime(hedef, now, 0.025);
     // Yeni bir hareket gelmezse kendiliğinden sussun
     sayfaKazanc.gain.setTargetAtTime(0, now + 0.09, 0.06);
-    sayfaBant.frequency.setTargetAtTime(1050 + Math.sin(Math.PI * oran) * 1150, now, 0.05);
+    // Sayfa kalkarken ince kenarı sürtüyor, ses tiz başlıyor; karşı yaprağa
+    // yaklaştıkça yüzey büyüyüp tokluşuyor. Bu yüzden bant baştan sona
+    // iniyor. Ortada tepe yapan eğri kullanılınca ses savrulma gibi,
+    // yani rüzgâr gibi duyuluyordu.
+    sayfaBant.frequency.setTargetAtTime(2700 - oran * 1850, now, 0.05);
   });
 
   function sayfaSustur() {
