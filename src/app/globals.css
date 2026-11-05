@@ -1616,12 +1616,51 @@ a.contact-row:hover {
 /* --- BMO'nun ekranı: kartuş takılınca açılan katman ---
    Stiller adarkeser.com'un bmo-screen.css dosyasından alındı. Rengi BMO'nun
    3B ekranıyla aynı olduğu için zoom bitiminde geçiş görünmüyor. */
-/* Sade moda dönüş — sahnenin sağ üstünde, defterin diliyle uyumlu */
-.bmo-mod {
+/* Sahnenin sağ üstündeki araçlar: ses ve sade moda dönüş */
+.bmo-araclar {
   position: absolute;
   top: 1rem;
   right: 1rem;
   z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bmo-ses {
+  display: grid;
+  place-items: center;
+  width: 2.3rem;
+  height: 2.3rem;
+  padding: 0;
+  border: 2px solid #2b1b10;
+  border-radius: 999px;
+  background: #f4e7c6;
+  color: #3a3124;
+  cursor: pointer;
+  box-shadow: 0 6px 16px -8px rgba(30, 14, 4, 0.9);
+  transition: transform 0.14s var(--ease), background 0.16s var(--ease);
+}
+.bmo-ses svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.bmo-ses:hover {
+  background: #fff6de;
+  transform: translateY(-1px);
+}
+.bmo-ses:focus-visible,
+.bmo-mod:focus-visible {
+  outline: 3px solid #f4e7c6;
+  outline-offset: 3px;
+}
+
+.bmo-mod {
   padding: 0.5rem 0.9rem;
   border: 2px solid #2b1b10;
   border-radius: 999px;
@@ -1636,10 +1675,6 @@ a.contact-row:hover {
 .bmo-mod:hover {
   background: #fff6de;
   transform: translateY(-1px);
-}
-.bmo-mod:focus-visible {
-  outline: 3px solid #f4e7c6;
-  outline-offset: 3px;
 }
 
 /* Telefonda sahnenin üstündeki ad ve yönerge.

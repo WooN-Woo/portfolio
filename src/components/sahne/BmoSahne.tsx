@@ -1,10 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { games, profile, projects, skills } from "@/content/site";
 import { createBmo } from "./bmoCekirdek";
 import { createDefter } from "./defter";
+import {
+  agziBagla,
+  cal,
+  konus,
+  sesiHazirla,
+  sesiUyandir,
+  sessizDinle,
+  sessizMi,
+  setSessiz,
+} from "./sesler";
 
 /**
  * Masa sahnesi.
@@ -131,6 +141,7 @@ const SAYFALAR = [
 ];
 
 export function BmoSahne() {
+  const [sessiz, setSessizDurum] = useState(false);
   const izRef = useRef<HTMLDivElement>(null);
   const tuvalRef = useRef<HTMLCanvasElement>(null);
   const tvRef = useRef<HTMLDivElement>(null);
@@ -159,6 +170,16 @@ export function BmoSahne() {
     let acik: number | null = null;
 
     const bekle = (ms: number) => new Promise((coz) => setTimeout(coz, ms));
+
+    let durtmeSayisi = 0;
+    let sonDurtme = 0;
+    const durt = () => {
+      const simdi = performance.now();
+      if (simdi - sonDurtme > 12000) durtmeSayisi = 0;
+      sonDurtme = simdi;
+      durtmeSayisi += 1;
+      void konus(durtmeSayisi >= 4 ? "bikkin" : durtmeSayisi >= 2 ? "durtme" : "sasir");
+    };
 
     /**
      * Kartuşu açık sayfanın yuvasına oturtur. Sayfa çevrilirken kartuş
@@ -202,6 +223,7 @@ export function BmoSahne() {
     const azHareket = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let hizalamaZamani = 0;
     let sonDikey: boolean | null = null;
+    let sonYaprak: number | null = null;
 
     const ekranOrani = () => window.innerWidth / window.innerHeight;
     const dikeyMi = () => ekranOrani() < DIKEY_ESIK;
@@ -278,6 +300,12 @@ export function BmoSahne() {
       // Açılım 0 "hakkımda", kartuşlar ondan sonra başlıyor
       kartuslariYerlestir(sayfa.acilim - 1, sayfa.yerlesme);
 
+      // Yeni bir yaprak çevrilmeye başladığında ses. İlk çizimde değil.
+      if (sonYaprak !== null && sayfa.yaprak !== sonYaprak) {
+        cal(sayfa.yaprak === 0 || sonYaprak === 0 ? "kapak" : "sayfa");
+      }
+      sonYaprak = sayfa.yaprak;
+
       window.clearTimeout(hizalamaZamani);
       hizalamaZamani = window.setTimeout(hizala, hizalamaBeklemesi());
     };
@@ -319,6 +347,7 @@ export function BmoSahne() {
       durum = "takiliyor";
       acik = null;
       await bmo.zoomIn();
+      void konus("selam");
       ekraniGoster(null);
       durum = "ekran";
       await bekle(400);
@@ -329,6 +358,7 @@ export function BmoSahne() {
       if (!bmo || durum !== "idle") return;
       durum = "takiliyor";
       acik = sira;
+      void konus("oyna");
       await bmo.insert(sira);
       await bmo.zoomIn();
       ekraniGoster(ICERIK[sira]);
@@ -340,6 +370,7 @@ export function BmoSahne() {
     const kapat = async () => {
       if (!bmo || durum !== "ekran") return;
       durum = "kapaniyor";
+      void konus("tekrar");
       bmo.setPaused(false);
       tv.dataset.cikiyor = "true";
       await bekle(240);
@@ -362,6 +393,11 @@ export function BmoSahne() {
       if (olay.key === "Escape" || olay.key.toLowerCase() === "b") kapat();
       if (olay.key.toLowerCase() === "a") projeyeGit();
     };
+
+    sesiHazirla();
+    const sesCozumle = sessizDinle(setSessizDurum);
+    // Tarayıcılar ses bağlamını ancak bir dokunuştan sonra açtırıyor
+    window.addEventListener("pointerdown", sesiUyandir, { once: true });
 
     const mobil =
       window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 820;
@@ -393,10 +429,15 @@ export function BmoSahne() {
         onPick: (sira: number) => {
           void ac(sira);
         },
-        // Defterin olmadığı telefon düzeninde hakkımda yazısına buradan
-        // ulaşılıyor; masaüstünde de kısa yol olarak duruyor.
+        // Yön tuşu hakkımda yazısını açıyor — defterin olmadığı telefon
+        // düzeninde tek yol bu. Öbür tuşlar BMO'yu dürtmek sayılıyor:
+        // üst üste basılırsa tepkisi sırayla sertleşiyor.
         onButton: (ad: string) => {
-          if (ad === "dpad" || ad === "screen") void hakkimdaAc();
+          if (ad === "dpad") {
+            void hakkimdaAc();
+            return;
+          }
+          durt();
         },
       });
       if (birakildi) {
@@ -404,6 +445,8 @@ export function BmoSahne() {
         return;
       }
       bmo = kurulan;
+      // Replik çalarken sesin genliği BMO'nun ağzını oynatıyor
+      agziBagla(kurulan.setTalk);
       defter = createDefter({
         scene: kurulan.scene,
         renderer: kurulan.renderer,
@@ -433,6 +476,8 @@ export function BmoSahne() {
       window.removeEventListener("resize", yenidenBoyutla);
       window.removeEventListener("keydown", tusa);
       window.clearTimeout(hizalamaZamani);
+      window.removeEventListener("pointerdown", sesiUyandir);
+      sesCozumle();
       geriDugme?.removeEventListener("click", kapat);
       gitDugme?.removeEventListener("click", projeyeGit);
       document.body.style.overflow = "";
@@ -452,9 +497,34 @@ export function BmoSahne() {
             />
             <canvas className="bmo-tuval" ref={tuvalRef} />
 
-            <Link className="bmo-mod" href="/">
-              Sade mod
-            </Link>
+            <div className="bmo-araclar">
+              <button
+                type="button"
+                className="bmo-ses"
+                aria-pressed={sessiz}
+                aria-label={sessiz ? "Sesi aç" : "Sesi kapat"}
+                title={sessiz ? "Sesi aç" : "Sesi kapat"}
+                onClick={() => {
+                  sesiUyandir();
+                  setSessiz(!sessizMi());
+                }}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 9.5h3.2L12 5.4v13.2L7.2 14.5H4z" />
+                  {sessiz ? (
+                    <path d="M16 9.6l4.4 4.8M20.4 9.6L16 14.4" />
+                  ) : (
+                    <>
+                      <path d="M15.8 9.3a3.6 3.6 0 010 5.4" />
+                      <path d="M18.3 7.2a7 7 0 010 9.6" />
+                    </>
+                  )}
+                </svg>
+              </button>
+              <Link className="bmo-mod" href="/">
+                Sade mod
+              </Link>
+            </div>
 
             {/* Telefonda defter yok; ad ve yönerge sahnenin üstünde duruyor */}
             <div className="bmo-baslik" ref={basligiRef} hidden>

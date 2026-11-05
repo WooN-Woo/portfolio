@@ -632,7 +632,8 @@ export function createDefter({ scene, renderer, projeler, kapak, dokuOlcek = 1 }
 
     const yakin = Math.round(adim);
     const yerlesme = 1 - Math.min(1, Math.abs(adim - yakin) / 0.25);
-    return { acilim: yakin - 1, yerlesme };
+    // yaprak: o an çevrilmekte olan yaprağın sırası (0 = dış kapak)
+    return { acilim: yakin - 1, yerlesme, yaprak: i };
   }
 
   setIlerleme(0);
