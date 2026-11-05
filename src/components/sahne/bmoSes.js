@@ -606,7 +606,7 @@ export function createBmoSound({
   // birbirine çarpması (Foley'de bisiklet tekerleğine kart tutma hilesi).
   // Taneler tamamen rastgele yerleştirilince ses ritmini kaybedip statik
   // gibi duyuluyor; bu yüzden eşit aralıklara oturtulup üstüne pay veriliyor.
-  const TANE_YOGUNLUGU = 430; // saniyede, normal hızda
+  const TANE_YOGUNLUGU = 680; // saniyede, normal hızda
   const TANE_PAYI = 0.42; // aralığın bu kadarı rastgele oynuyor
   let citirtiTamponu = null;
   let sayfaKaynak = null;
@@ -628,12 +628,13 @@ export function createBmoSound({
         uzunluk - 400,
         Math.max(0, Math.floor(i * aralik + kayma)),
       );
-      const boy = Math.floor(ctx.sampleRate * (0.004 + Math.random() * 0.008));
-      // genliklerin çoğu küçük, azı büyük: tepe/ortalama oranı böyle çıkıyor
-      const genlik = Math.random() ** 3.5;
+      const boy = Math.floor(ctx.sampleRate * (0.008 + Math.random() * 0.012));
+      // Çıtırtı duygusunu asıl veren, araya giren ani sivri taneler.
+      // Üs düşürülünce genlikler birbirine yaklaşıyor, doku düzleşiyor.
+      const genlik = 0.35 + Math.random() ** 2 * 0.65;
       // Tane birden başlarsa tık gibi duyuluyor; başı yumuşatılıp sonu
       // söndürülüyor, böylece çıtırtı değil hışırtı oluyor.
-      const cikis = Math.max(1, Math.floor(boy * 0.3));
+      const cikis = Math.max(1, Math.floor(boy * 0.45));
       for (let j = 0; j < boy; j += 1) {
         const zarf = Math.min(1, j / cikis) * Math.exp((-3 * j) / boy);
         veri[nerede + j] += (Math.random() * 2 - 1) * genlik * zarf;
@@ -662,7 +663,7 @@ export function createBmoSound({
     // Çıtırtı duygusu tiz uçtan geliyor; tepesi kesiliyor
     const tiz = ctx.createBiquadFilter();
     tiz.type = 'lowpass';
-    tiz.frequency.value = 4200;
+    tiz.frequency.value = 3000;
     tiz.Q.value = 0.7;
 
     sayfaKazanc = ctx.createGain();
