@@ -631,7 +631,10 @@ export function createDefter({ scene, renderer, projeler, kapak, dokuOlcek = 1 }
     bukumUygula(arkaGeo, aci);
 
     const yakin = Math.round(adim);
-    const yerlesme = 1 - Math.min(1, Math.abs(adim - yakin) / 0.25);
+    // Kartuş yalnızca sayfa oturduğunda görünüyor. Pencere geniş olursa
+    // kartuş, çevrilen yaprak daha sol sayfanın üstüne inerken büyümeye
+    // başlıyor ve yaprağın içinden geçiyor.
+    const yerlesme = 1 - Math.min(1, Math.abs(adim - yakin) / 0.045);
     // yaprak: o an çevrilmekte olan yaprağın sırası (0 = dış kapak)
     return { acilim: yakin - 1, yerlesme, yaprak: i, pay };
   }
