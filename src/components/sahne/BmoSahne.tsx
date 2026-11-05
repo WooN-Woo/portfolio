@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { games, profile, projects, skills } from "@/content/site";
 import { createBmo } from "./bmoCekirdek";
@@ -130,7 +131,6 @@ const SAYFALAR = [
 ];
 
 export function BmoSahne() {
-  const taniRef = useRef<HTMLPreElement>(null);
   const izRef = useRef<HTMLDivElement>(null);
   const tuvalRef = useRef<HTMLCanvasElement>(null);
   const tvRef = useRef<HTMLDivElement>(null);
@@ -149,35 +149,6 @@ export function BmoSahne() {
     const tuval = tuvalRef.current;
     const tv = tvRef.current;
     if (!iz || !tuval || !tv) return;
-
-    // Geçici teşhis: adrese ?tani ekleyince ekranda durum yazısı çıkıyor.
-    // Telefonda sahnenin neden çizilmediğini görmek için.
-    const taniAcik = new URLSearchParams(window.location.search).has("tani");
-    const taniSatirlari: string[] = [];
-    const tani = (satir: string) => {
-      taniSatirlari.push(satir);
-      if (taniRef.current) taniRef.current.textContent = taniSatirlari.join("\n");
-    };
-    if (taniAcik) {
-      taniRef.current?.setAttribute("data-acik", "true");
-      tani(`ekran ${window.innerWidth}x${window.innerHeight} dpr${window.devicePixelRatio}`);
-      try {
-        const deneme = document.createElement("canvas");
-        const gl =
-          deneme.getContext("webgl2") ??
-          (deneme.getContext("webgl") as WebGLRenderingContext | null);
-        tani(gl ? `webgl ${gl instanceof WebGL2RenderingContext ? 2 : 1} var` : "WEBGL YOK");
-        const bilgi = gl?.getExtension("WEBGL_debug_renderer_info");
-        if (gl && bilgi) tani(String(gl.getParameter(bilgi.UNMASKED_RENDERER_WEBGL)).slice(0, 48));
-      } catch (hata) {
-        tani(`webgl hatasi: ${String(hata).slice(0, 80)}`);
-      }
-      window.addEventListener("error", (olay) => tani(`HATA: ${olay.message}`.slice(0, 120)));
-      window.addEventListener("unhandledrejection", (olay) =>
-        tani(`RED: ${String(olay.reason).slice(0, 120)}`),
-      );
-      tuval.addEventListener("webglcontextlost", () => tani("WEBGL BAGLAMI KAYBOLDU"));
-    }
 
     let bmo: Awaited<ReturnType<typeof createBmo>> | null = null;
     let defter: ReturnType<typeof createDefter> | null = null;
@@ -398,7 +369,6 @@ export function BmoSahne() {
     izYuksekligiAyarla();
 
     (async () => {
-      try {
       const kurulan = await createBmo(tuval, {
         // Telefonda piksel oranı ve gölge çözünürlüğü kısılıyor
         pikselOrani: mobil ? 1.3 : 2,
@@ -442,17 +412,7 @@ export function BmoSahne() {
         // telefonda sayfa dokuları küçülüyor, yerleşim aynı kalıyor
         dokuOlcek: mobil ? 0.68 : 1,
       });
-      if (taniAcik) {
-        tani("sahne kuruldu");
-        tani(`tuval ${tuval.clientWidth}x${tuval.clientHeight}`);
-        tani(`dikey: ${dikeyMi()} durak: ${durakSayisi()}`);
-      }
       guncelle();
-      } catch (hata) {
-        tani(`KURULUM HATASI: ${String(hata)}`.slice(0, 200));
-        taniRef.current?.setAttribute("data-acik", "true");
-        throw hata;
-      }
     })();
 
     window.addEventListener("scroll", guncelle, { passive: true });
@@ -483,7 +443,6 @@ export function BmoSahne() {
 
   return (
     <>
-      <pre className="bmo-tani" ref={taniRef} />
       <div className="bmo-iz" ref={izRef}>
         <div className="bmo-sahne">
           <div className="bmo-oda">
@@ -492,6 +451,10 @@ export function BmoSahne() {
               style={{ backgroundPosition: `center ${DIKEY_HIZA * 100}%` }}
             />
             <canvas className="bmo-tuval" ref={tuvalRef} />
+
+            <Link className="bmo-mod" href="/">
+              Sade mod
+            </Link>
 
             {/* Telefonda defter yok; ad ve yönerge sahnenin üstünde duruyor */}
             <div className="bmo-baslik" ref={basligiRef} hidden>

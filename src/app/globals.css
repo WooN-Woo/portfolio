@@ -212,6 +212,19 @@ ul {
   color: var(--accent);
 }
 
+/* Macera moduna geçiş — sitenin geri kalanından ayrışsın diye hap biçiminde */
+.nav-mod {
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--ink);
+  transition: border-color 0.2s var(--ease), color 0.2s var(--ease);
+}
+.nav-mod:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* ==========================================================================
    Giriş
    ========================================================================== */
@@ -1396,26 +1409,6 @@ a.contact-row:hover {
   pointer-events: none;
 }
 
-/* Geçici teşhis paneli — yalnızca adreste ?tani varken görünür */
-.bmo-tani {
-  display: none;
-}
-.bmo-tani[data-acik="true"] {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 50;
-  display: block;
-  max-width: 100%;
-  margin: 0;
-  padding: 6px 8px;
-  color: #d8f4ea;
-  background: rgba(10, 8, 5, 0.86);
-  font: 11px/1.45 ui-monospace, monospace;
-  white-space: pre-wrap;
-  pointer-events: none;
-}
-
 .bmo-tuval {
   position: absolute;
   inset: 0;
@@ -1623,6 +1616,32 @@ a.contact-row:hover {
 /* --- BMO'nun ekranı: kartuş takılınca açılan katman ---
    Stiller adarkeser.com'un bmo-screen.css dosyasından alındı. Rengi BMO'nun
    3B ekranıyla aynı olduğu için zoom bitiminde geçiş görünmüyor. */
+/* Sade moda dönüş — sahnenin sağ üstünde, defterin diliyle uyumlu */
+.bmo-mod {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 3;
+  padding: 0.5rem 0.9rem;
+  border: 2px solid #2b1b10;
+  border-radius: 999px;
+  background: #f4e7c6;
+  color: #3a3124;
+  font-family: var(--font-el), Georgia, serif;
+  font-size: 1rem;
+  line-height: 1;
+  box-shadow: 0 6px 16px -8px rgba(30, 14, 4, 0.9);
+  transition: transform 0.14s var(--ease), background 0.16s var(--ease);
+}
+.bmo-mod:hover {
+  background: #fff6de;
+  transform: translateY(-1px);
+}
+.bmo-mod:focus-visible {
+  outline: 3px solid #f4e7c6;
+  outline-offset: 3px;
+}
+
 /* Telefonda sahnenin üstündeki ad ve yönerge.
    Masaüstünde ikisi de defterin kapağında yazdığı için gizli. */
 .bmo-baslik {

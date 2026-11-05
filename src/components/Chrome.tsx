@@ -23,6 +23,9 @@ export function Nav() {
           <a className="nav-link nav-link-strong" href="#iletisim">
             İletişim
           </a>
+          <Link className="nav-link nav-mod" href="/macera">
+            Macera modu
+          </Link>
           {process.env.NODE_ENV === "development" ? (
             <Link className="nav-link nav-link-strong" href="/duzenle">
               İçerik
