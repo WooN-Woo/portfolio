@@ -202,7 +202,7 @@ export function BmoSahne() {
      */
     // Telefonda ara durumda iki sayfa da yarım göründüğü için hizalama
     // daha çabuk devreye giriyor.
-    const hizalamaBeklemesi = () => 2000;
+    const hizalamaBeklemesi = () => 1000;
     const azHareket = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let hizalamaZamani = 0;
     let sonDikey: boolean | null = null;
