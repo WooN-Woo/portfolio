@@ -5,16 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { games, profile, projects, skills } from "@/content/site";
 import { createBmo } from "./bmoCekirdek";
 import { createDefter } from "./defter";
-import {
-  agziBagla,
-  cal,
-  konus,
-  sesiHazirla,
-  sesiUyandir,
-  sessizDinle,
-  sessizMi,
-  setSessiz,
-} from "./sesler";
+import { createBmoSound } from "./bmoSes";
 
 /**
  * Masa sahnesi.
@@ -141,13 +132,14 @@ const SAYFALAR = [
 ];
 
 export function BmoSahne() {
-  const [sessiz, setSessizDurum] = useState(false);
+  const [sesAcik, setSesAcik] = useState(true);
   const izRef = useRef<HTMLDivElement>(null);
   const tuvalRef = useRef<HTMLCanvasElement>(null);
   const tvRef = useRef<HTMLDivElement>(null);
   const icRef = useRef<HTMLDivElement>(null);
   const basligiRef = useRef<HTMLDivElement>(null);
   const ipucuRef = useRef<HTMLParagraphElement>(null);
+  const sesiDegistirRef = useRef<(() => void) | null>(null);
   const gorselRef = useRef<HTMLImageElement>(null);
   const adRef = useRef<HTMLHeadingElement>(null);
   const ozetRef = useRef<HTMLParagraphElement>(null);
@@ -171,15 +163,6 @@ export function BmoSahne() {
 
     const bekle = (ms: number) => new Promise((coz) => setTimeout(coz, ms));
 
-    let durtmeSayisi = 0;
-    let sonDurtme = 0;
-    const durt = () => {
-      const simdi = performance.now();
-      if (simdi - sonDurtme > 12000) durtmeSayisi = 0;
-      sonDurtme = simdi;
-      durtmeSayisi += 1;
-      void konus(durtmeSayisi >= 4 ? "bikkin" : durtmeSayisi >= 2 ? "durtme" : "sasir");
-    };
 
     /**
      * Kartuşu açık sayfanın yuvasına oturtur. Sayfa çevrilirken kartuş
@@ -224,6 +207,8 @@ export function BmoSahne() {
     let hizalamaZamani = 0;
     let sonDikey: boolean | null = null;
     let sonYaprak: number | null = null;
+    let oncekiPay = 0;
+    let oncekiZaman = performance.now();
 
     const ekranOrani = () => window.innerWidth / window.innerHeight;
     const dikeyMi = () => ekranOrani() < DIKEY_ESIK;
@@ -292,6 +277,7 @@ export function BmoSahne() {
 
       if (dikey) {
         // Kaydırma yok: BMO ve kartuşlar tek ekranda duruyor
+        ses.sayfaSustur();
         return;
       }
 
@@ -301,9 +287,19 @@ export function BmoSahne() {
       kartuslariYerlestir(sayfa.acilim - 1, sayfa.yerlesme);
 
       // Yeni bir yaprak çevrilmeye başladığında ses. İlk çizimde değil.
-      if (sonYaprak !== null && sayfa.yaprak !== sonYaprak) {
-        cal(sayfa.yaprak === 0 || sonYaprak === 0 ? "kapak" : "sayfa");
-      }
+      // Sayfa sesi çevirmenin hızını takip ediyor: yavaş çevirince hafif
+      // hışırtı, hızlı çevirince gür. Yaprak değiştiği an sayfa karşı tarafa
+      // düşmüş demektir, o anda kısa bir tık geliyor.
+      const simdi = performance.now();
+      const gecen = Math.max(0.016, (simdi - oncekiZaman) / 1000);
+      const yaprakDegisti = sonYaprak !== null && sayfa.yaprak !== sonYaprak;
+      ses.sayfaAkisi(
+        yaprakDegisti ? 0 : Math.abs(sayfa.pay - oncekiPay) / gecen,
+        sayfa.pay,
+      );
+      if (yaprakDegisti) ses.sayfaKondu(sonYaprak === 0 || sayfa.yaprak === 0);
+      oncekiPay = sayfa.pay;
+      oncekiZaman = simdi;
       sonYaprak = sayfa.yaprak;
 
       window.clearTimeout(hizalamaZamani);
@@ -347,8 +343,8 @@ export function BmoSahne() {
       durum = "takiliyor";
       acik = null;
       await bmo.zoomIn();
-      void konus("selam");
       ekraniGoster(null);
+      ses.arrive();
       durum = "ekran";
       await bekle(400);
       if (durum === "ekran") bmo.setPaused(true);
@@ -358,10 +354,11 @@ export function BmoSahne() {
       if (!bmo || durum !== "idle") return;
       durum = "takiliyor";
       acik = sira;
-      void konus("oyna");
+      ses.cartPick(sira);
       await bmo.insert(sira);
       await bmo.zoomIn();
       ekraniGoster(ICERIK[sira]);
+      ses.arrive();
       durum = "ekran";
       await bekle(400);
       if (durum === "ekran") bmo.setPaused(true);
@@ -370,7 +367,7 @@ export function BmoSahne() {
     const kapat = async () => {
       if (!bmo || durum !== "ekran") return;
       durum = "kapaniyor";
-      void konus("tekrar");
+      ses.back();
       bmo.setPaused(false);
       tv.dataset.cikiyor = "true";
       await bekle(240);
@@ -386,7 +383,9 @@ export function BmoSahne() {
     const projeyeGit = () => {
       if (acik === null) return;
       const baglanti = ICERIK[acik].baglanti;
-      if (baglanti) window.open(baglanti, "_blank", "noopener,noreferrer");
+      if (!baglanti) return;
+      ses.confirm();
+      window.open(baglanti, "_blank", "noopener,noreferrer");
     };
 
     const tusa = (olay: KeyboardEvent) => {
@@ -394,10 +393,16 @@ export function BmoSahne() {
       if (olay.key.toLowerCase() === "a") projeyeGit();
     };
 
-    sesiHazirla();
-    const sesCozumle = sessizDinle(setSessizDurum);
-    // Tarayıcılar ses bağlamını ancak bir dokunuştan sonra açtırıyor
-    window.addEventListener("pointerdown", sesiUyandir, { once: true });
+    // Sesler: efektlerin hepsi kodla üretiliyor, dosya yalnızca BMO'nun
+    // replikleri için. Tarayıcı ilk dokunuşa kadar izin vermediğinden modül
+    // selamlamayı o ana kadar bekletiyor.
+    const ses = createBmoSound();
+    setSesAcik(ses.isOn());
+    sesiDegistirRef.current = () => {
+      ses.setOn(!ses.isOn());
+      setSesAcik(ses.isOn());
+      ses.confirm();
+    };
 
     const mobil =
       window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 820;
@@ -410,6 +415,7 @@ export function BmoSahne() {
         pikselOrani: mobil ? 1.3 : 2,
         golgeCozunurluk: mobil ? 1024 : 2048,
         golgelerAcik: !mobil,
+        sound: ses,
         evUzaklik: EV_UZAKLIK,
         evKaydirma: EV_KAYDIRMA,
         disKartusYerlesimi: true,
@@ -430,14 +436,10 @@ export function BmoSahne() {
           void ac(sira);
         },
         // Yön tuşu hakkımda yazısını açıyor — defterin olmadığı telefon
-        // düzeninde tek yol bu. Öbür tuşlar BMO'yu dürtmek sayılıyor:
-        // üst üste basılırsa tepkisi sırayla sertleşiyor.
+        // düzeninde tek yol bu. Öbür tuşların sesini ve tepkisini çekirdek
+        // kendisi veriyor (üst üste basılırsa BMO bıkıyor).
         onButton: (ad: string) => {
-          if (ad === "dpad") {
-            void hakkimdaAc();
-            return;
-          }
-          durt();
+          if (ad === "dpad") void hakkimdaAc();
         },
       });
       if (birakildi) {
@@ -445,8 +447,8 @@ export function BmoSahne() {
         return;
       }
       bmo = kurulan;
-      // Replik çalarken sesin genliği BMO'nun ağzını oynatıyor
-      agziBagla(kurulan.setTalk);
+      // Açılış melodisi ve selamlama; ses kapalıysa sessizce atlanıyor
+      ses.greet();
       defter = createDefter({
         scene: kurulan.scene,
         renderer: kurulan.renderer,
@@ -476,8 +478,8 @@ export function BmoSahne() {
       window.removeEventListener("resize", yenidenBoyutla);
       window.removeEventListener("keydown", tusa);
       window.clearTimeout(hizalamaZamani);
-      window.removeEventListener("pointerdown", sesiUyandir);
-      sesCozumle();
+      sesiDegistirRef.current = null;
+      ses.dispose();
       geriDugme?.removeEventListener("click", kapat);
       gitDugme?.removeEventListener("click", projeyeGit);
       document.body.style.overflow = "";
@@ -501,17 +503,14 @@ export function BmoSahne() {
               <button
                 type="button"
                 className="bmo-ses"
-                aria-pressed={sessiz}
-                aria-label={sessiz ? "Sesi aç" : "Sesi kapat"}
-                title={sessiz ? "Sesi aç" : "Sesi kapat"}
-                onClick={() => {
-                  sesiUyandir();
-                  setSessiz(!sessizMi());
-                }}
+                aria-pressed={sesAcik}
+                aria-label={sesAcik ? "Sesi kapat" : "Sesi aç"}
+                title={sesAcik ? "Sesi kapat" : "Sesi aç"}
+                onClick={() => sesiDegistirRef.current?.()}
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M4 9.5h3.2L12 5.4v13.2L7.2 14.5H4z" />
-                  {sessiz ? (
+                  {!sesAcik ? (
                     <path d="M16 9.6l4.4 4.8M20.4 9.6L16 14.4" />
                   ) : (
                     <>

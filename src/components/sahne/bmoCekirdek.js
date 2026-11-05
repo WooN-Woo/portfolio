@@ -2,8 +2,11 @@
 // adarkeser.com'daki bmoScene bundle'ından çıkarıldı, okunur hale getirildi.
 // Ölçüler, renkler ve animasyon değerleri orijinalle birebir aynıdır.
 //
-// Oda, ses ve arka plana göre kamera hizalama dahil değildir.
+// Oda ve arka plana göre kamera hizalama dahil değildir.
 // Onların orijinali: original/bmo.pretty.js
+//
+// Ses: createBmoSound() sonucunu sound seçeneğiyle ver (bkz. bmo-sound.js).
+// Verilmezse BMO sessiz çalışır.
 //
 // Kartuşlar: projects dizisi verilirse her proje için bir kartuş oluşur.
 //   { name, shortName?, color, surface, face?, shot?: { src } }
@@ -399,34 +402,30 @@ export async function createBmo(
     onPick = /** @type {((index: number) => void) | undefined} */ (undefined),
     onHover = /** @type {((index: number | null) => void) | undefined} */ (undefined),
     onButton = /** @type {((name: string) => void) | undefined} */ (undefined),
-    // Bu projeye özel ek (orijinalde yok): BMO tuvalin tam ortasında değil,
-    // arka plandaki masanın köşesinde dursun diye kameranın ev konumu
-    // kaydırılıyor. Kaydırma görünen alanın oranı cinsinden, böylece ekran
-    // oranı değişince BMO masadan kaymıyor. Zoom ilerledikçe kaydırma
-    // kendiliğinden sıfırlanır, çünkü kamera ekranın tam karşısına gider.
+    sound = /** @type {any} */ (undefined),
+    // --- buradan aşağısı bu projeye özel ek (orijinalde yok) ---
+    // Kameranın ev konumu: BMO tuvalin tam ortasında değil, arka plandaki
+    // masanın köşesinde dursun diye kaydırılıyor. Kaydırma görünen alanın
+    // oranı cinsinden; ekran oranı değişince BMO masadan kaymıyor. Zoom
+    // ilerledikçe kaydırma kendiliğinden sıfırlanır.
     evUzaklik = 1,
     evKaydirma = { x: 0, y: 0 },
     // Kartuşların yerini dışarısı belirliyorsa (masaüstünde defterin
-    // sayfasına oturtuluyorlar) çekirdeğin kendi yerleşimi devre dışı kalır.
-    // Telefonda defter yok, kartuşları çekirdek diziyor.
+    // sayfasına oturuyorlar) çekirdeğin kendi dizilimi devre dışı kalır.
     disKartusYerlesimi = false,
-    // Sahnede BMO'dan başka nesne de var (defter, sehpa). Gölge kamerasının
-    // kapsadığı alan onları da içersin diye dışarıdan verilebiliyor.
+    // Sahnede BMO'dan başka nesne de var (defter, sehpa); gölge kamerası
+    // onları da kapsasın.
     golgeAlani = 3,
     // Gölgeyi aydınlatmadan ayırmak için. Orijinalde gölgeyi güneş atıyor ve
     // ışık önden geldiği için gölge arkaya düşüyor; boyalı odada ışık
-    // pencereden, yani arkadan geliyor. Burası doluysa güneş yalnızca
-    // aydınlatır, gölgeyi şiddeti sıfır olan ayrı bir ışık atar.
+    // pencereden, yani arkadan geliyor.
     golgeIsigi = /** @type {{x: number, y: number, z: number} | null} */ (null),
     temasGolgesiOpaklik = 0.55,
-    // Gölgenin düştüğü zemin. Varsayılanı geniş; boyalı bir masanın üstünde
-    // ise masanın sınırlarına çekilmeli, yoksa gölge masadan sarkıyor.
+    // Gölgenin düştüğü zemin; masanın sınırlarına çekilmezse gölge sarkıyor.
     zemin = { en: 8, boy: 8, x: 0, z: 0 },
-    // Telefonda piksel oranı ve gölge çözünürlüğü kısılabilsin
+    // Telefon ayarları
     pikselOrani = 2,
     golgeCozunurluk = 2048,
-    // Telefonda gölge haritası pahalıya geliyor; kapatılabiliyor.
-    // Nesnelerin masaya oturmuşluğunu temas lekeleri zaten veriyor.
     golgelerAcik = true,
   } = {},
 ) {
@@ -436,7 +435,6 @@ export async function createBmo(
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NoToneMapping;
   renderer.shadowMap.enabled = golgelerAcik;
-  // PCFSoftShadowMap three 0.187'de kaldırıldı; PCFShadowMap'e düşüyor.
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.setClearColor(0, 0);
 
@@ -468,7 +466,7 @@ export async function createBmo(
   scene.add(sun);
 
   // Yalnızca gölge atan ışık. Şiddeti sıfır olduğu için sahneyi
-  // aydınlatmaz, ama gölge haritası yine de bu yönden hesaplanır.
+  // aydınlatmaz, ama gölge haritası bu yönden hesaplanır.
   if (golgeIsigi && golgelerAcik) {
     const golgeKaynagi = new THREE.DirectionalLight('#ffffff', 0);
     golgeKaynagi.position.set(golgeIsigi.x, golgeIsigi.y, golgeIsigi.z);
@@ -844,9 +842,17 @@ export async function createBmo(
   let hovered = null;
   let highlighted = null;
 
+  // Ses, nesnenin ekrandaki yerine göre sağa ya da sola kayar
+  const panAt = (position) =>
+    Math.min(0.75, Math.max(-0.75, position.clone().project(camera).x * 0.6));
+  const panOf = (mesh) => panAt(mesh.getWorldPosition(vec3()));
+
   function setHover(index) {
     if (index === hovered) return;
     hovered = index;
+    if (index !== null && index !== highlighted) {
+      sound?.cartHover(index, panAt(carts[index].group.position));
+    }
     onHover?.(index);
   }
 
@@ -887,12 +893,18 @@ export async function createBmo(
     const { mouth, seat, flat } = slotPoints();
     const peak = start.clone().lerp(mouth, 0.5).add(vec3(0, 0.45, 0));
 
+    if (!reducedMotion) {
+      sound?.cartFly(860, panAt(start), panAt(mouth));
+      // İlk tıklama kartuşa geldiyse selamlama araya girmesin, ses kartuşla gitsin
+      sound?.speak('whee', { cut: true });
+    }
     await tween(860, EASE.inOut, (t) => {
       bezier(start, peak, mouth, t, group.position);
       group.quaternion.slerpQuaternions(startQuaternion, flat, t);
       group.scale.setScalar(startScale + (1 - startScale) * t);
     });
     await wait(80);
+    sound?.cartSeat(reducedMotion ? 0 : 340, panAt(mouth));
     await tween(340, EASE.inOut, (t) => group.position.lerpVectors(mouth, seat, t));
 
     clearTimeout(moodTimer);
@@ -906,6 +918,8 @@ export async function createBmo(
       flash: 1,
       dirty: true,
     });
+    if (!reducedMotion) sound?.boot();
+    sound?.speak('play');
     await tween(160, EASE.linear, (t) => {
       face.flash = 1 - t;
       face.dirty = true;
@@ -918,10 +932,13 @@ export async function createBmo(
         face.dirty = true;
       }),
       tween(name.length * 55, EASE.linear, (t) => {
-        face.chars = Math.round(t * name.length);
+        const chars = Math.round(t * name.length);
+        if (chars > face.chars && !reducedMotion) sound?.typeLetter(chars - 1);
+        face.chars = chars;
         face.dirty = true;
       }),
     ]);
+    if (!reducedMotion) sound?.bootDone();
     await wait(260);
   }
 
@@ -929,15 +946,17 @@ export async function createBmo(
     const cart = carts[index];
     const { group } = cart;
     Object.assign(face, { mode: 'face', app: null, icon: null, dirty: true });
-    setMood('happy', 900);
+    setMood('happy', Math.max(900, (sound?.speak('again') ?? 0) + 100));
 
     const { mouth } = slotPoints();
     const seated = group.position.clone();
+    sound?.cartEject(panAt(mouth));
     await tween(300, EASE.out, (t) => group.position.lerpVectors(seated, mouth, t));
 
     const home = cart.rest.position;
     const peak = mouth.clone().lerp(home, 0.5).add(vec3(0, 0.45, 0));
     const startQuaternion = group.quaternion.clone();
+    if (!reducedMotion) sound?.cartFly(760, panAt(mouth), panAt(home));
     await tween(760, EASE.inOut, (t) => {
       bezier(mouth, peak, home, t, group.position);
       group.quaternion.slerpQuaternions(startQuaternion, cart.rest.tilt, t);
@@ -1131,6 +1150,7 @@ export async function createBmo(
   const cartOf = (mesh) => (mesh && mesh.userData.cart !== undefined ? mesh.userData.cart : null);
   const pointer = { x: 0, y: 0 };
   let pressed = null;
+  let recentPresses = [];
 
   function pick(event) {
     const rect = canvas.getBoundingClientRect();
@@ -1160,7 +1180,34 @@ export async function createBmo(
     const mesh = pick(event);
     if (!mesh) return;
     pressed = mesh;
-    if (cartOf(mesh) === null) press(mesh, true);
+    if (cartOf(mesh) === null) {
+      press(mesh, true);
+      sound?.press(mesh.userData.button, panOf(mesh));
+    }
+  }
+
+  // Ekrana dürtünce şaşırır, 3 saniyede 5 kez basılınca kızar. O sırada başka bir
+  // şey söylüyorsa sözünü kesmez, yalnızca kızarken sıraya girer.
+  function reactToPress(name, pan) {
+    const now = performance.now();
+    recentPresses = recentPresses.filter((time) => now - time < 3000).concat(now);
+    const annoyed = recentPresses.length >= 5;
+    if (annoyed) recentPresses = [];
+    const poked = name === 'screen';
+    const startled = annoyed || poked || name === 'b' || name === 'triangle';
+
+    const speaking = sound?.voiceLeft() ?? 0;
+    if (speaking && !annoyed) return;
+    const group = annoyed ? 'annoyed' : poked ? 'poked' : startled ? 'surprised' : 'happy';
+    const talking = sound?.speak(group, { at: 0.03, pan }) ?? 0;
+    const show = () =>
+      setMood(
+        startled ? 'surprised' : 'happy',
+        Math.max(startled ? 900 : 1000, talking - speaking + 100),
+      );
+    clearTimeout(moodTimer);
+    if (speaking) moodTimer = setTimeout(show, speaking);
+    else show();
   }
 
   function onPointerUp(event) {
@@ -1173,10 +1220,11 @@ export async function createBmo(
       return;
     }
     press(mesh, false);
-    if (pick(event) !== mesh || face.mode !== 'face') return;
     const name = mesh.userData.button;
-    const startled = name === 'screen' || name === 'b' || name === 'triangle';
-    setMood(startled ? 'surprised' : 'happy', startled ? 900 : 1000);
+    const pan = panOf(mesh);
+    sound?.release(name, pan);
+    if (pick(event) !== mesh || face.mode !== 'face') return;
+    reactToPress(name, pan);
     onButton?.(name);
   }
 
@@ -1248,7 +1296,7 @@ export async function createBmo(
       face.look.y = y;
 
       // Ağız hızlı açılır, daha yavaş kapanır
-      const level = face.talkTarget;
+      const level = sound ? sound.talkLevel() : face.talkTarget;
       const talking = level !== null;
       const goal = level ?? 0;
       const talk = face.talk + (goal - face.talk) * Math.min(1, dt * (goal > face.talk ? 30 : 15));
@@ -1285,46 +1333,46 @@ export async function createBmo(
   frame = requestAnimationFrame(loop);
 
   return {
-    // Bu projeye özel ek: defter de aynı sahneye ekleniyor, böylece ışık,
-    // gölge ve perspektif BMO ile birebir aynı oluyor.
+    // --- bu projeye özel ekler ---
+    // Defter de aynı sahneye ekleniyor: ışık, gölge ve perspektif aynı olsun.
     scene,
     camera,
     renderer,
-    // Kartuşların yerini dışarıdan belirleyebilmek için (defterin sayfasına
-    // oturtuluyorlar). rest.position/tilt/face/scale yazılır, çizim döngüsü
-    // her karede buradan okur.
+    // Kartuşların yerini dışarıdan belirleyebilmek için; rest.position/tilt/
+    // face/scale yazılır, çizim döngüsü her karede buradan okur.
     carts,
+    setDisKartusYerlesimi(deger) {
+      disKartusYerlesimi = deger;
+      resize();
+    },
+    // Kadrajı çalışma anında değiştirir; yatay/dikey geçişinde kamera
+    // düzen yeniden kurulmadan yerine oturuyor.
+    setEvKadraj(yeni) {
+      if (yeni.uzaklik !== undefined) evUzaklik = yeni.uzaklik;
+      if (yeni.kaydirma) evKaydirma = yeni.kaydirma;
+      evHesapla();
+      applyZoom();
+    },
     setMood,
-    // 0-1 arası ses seviyesi konuşturur, null ağzı kapatır. Sitede bu değer
-    // çalan sesin genliğinden geliyor.
+    // 0-1 arası seviye konuşturur, null ağzı kapatır. sound verildiyse ağız
+    // çalan sesi izler ve bu çağrı etkisiz kalır.
     setTalk(level) {
       face.talkTarget = level;
     },
     // Tıklama gibi tek seferlik tetikleyiciler için. Kamera varınca biter.
     zoomIn() {
+      if (!reducedMotion) sound?.zoomIn(ZOOM_IN_MS);
       return flyTo(1, ZOOM_IN_MS);
     },
     zoomOut() {
       paused = false;
+      if (!reducedMotion) sound?.zoomOut(ZOOM_OUT_MS);
       return flyTo(0, ZOOM_OUT_MS);
     },
     // Scroll için: 0 BMO'nun tamamı, 1 yalnızca ekran.
     setZoom(progress) {
       zoom.run++;
       zoom.progress = Math.min(1, Math.max(0, progress));
-      applyZoom();
-    },
-    // Kartuş yerleşimini çekirdeğe geri devreder (telefon düzeni).
-    setDisKartusYerlesimi(deger) {
-      disKartusYerlesimi = deger;
-      resize();
-    },
-    // Kadrajı çalışma anında değiştirir; ekran yatay/dikey arasında
-    // geçince düzen yeniden kurulmadan kamera yerine oturuyor.
-    setEvKadraj(yeni) {
-      if (yeni.uzaklik !== undefined) evUzaklik = yeni.uzaklik;
-      if (yeni.kaydirma) evKaydirma = yeni.kaydirma;
-      evHesapla();
       applyZoom();
     },
     // Ekranı HTML katmanı kapladığında boşuna çizim yapılmasın diye.
@@ -1335,6 +1383,9 @@ export async function createBmo(
     eject: ejectCart,
     // Klavyeyle seçilen kartuşu öne çıkarır, null kaldırır.
     setHighlight(index) {
+      if (index !== null && index !== highlighted && index !== hovered) {
+        sound?.cartHover(index, panAt(carts[index].group.position));
+      }
       highlighted = index;
     },
     dispose() {
