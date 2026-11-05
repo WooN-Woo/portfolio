@@ -640,12 +640,21 @@ export function createDefter({ scene, renderer, projeler, kapak, dokuOlcek = 1 }
     // Kartuş bu noktaya kadar TAM BOYDA duruyor, sonra hızla küçülüyor.
     // Doğrusal küçültülünce yolun çoğunda yarım boyda kalıyor, "kartuş yok"
     // gibi görünüyordu.
+    // Ters yönde (sayfa soldan sağa açılırken) kartuş eskiden son 0.03'te
+    // geliyordu, gereksiz geç kalıyordu. Ölçüme göre yaprak kartuşun
+    // gövdesinden yalnızca pay 0.85–0.91 arasında geçiyor; 0.92'den sonra
+    // kartuşun altında kalıyor, yani kesişme bitiyor.
     const KESISME = 0.47; // 0.498'in biraz altı, pay bırakmak için
+    // Kartuş çarpışma bandı biter bitmez (pay 0.92) belirip 0.95'te tam
+    // boya çıkıyor. Doğrusal rampa kullanılınca büyümenin tamamı son
+    // kılpaya yığılıyor, kartuş yine yokmuş gibi duruyordu.
+    const DONUS_BAS = 0.08;
+    const DONUS_TAM = 0.05;
     const fark = adim - yakin;
     const yerlesme =
       fark > 0
         ? 1 - sinirla((fark - KESISME) / 0.05)
-        : 1 - sinirla(-fark / 0.03);
+        : sinirla((DONUS_BAS + fark) / (DONUS_BAS - DONUS_TAM));
     // yaprak: o an çevrilmekte olan yaprağın sırası (0 = dış kapak)
     return { acilim: yakin - 1, yerlesme, yaprak: i, pay };
   }
