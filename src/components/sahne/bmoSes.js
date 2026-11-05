@@ -657,13 +657,13 @@ export function createBmoSound({
 
     sayfaBant = ctx.createBiquadFilter();
     sayfaBant.type = 'bandpass';
-    sayfaBant.Q.value = 0.9;
-    sayfaBant.frequency.value = 2000;
+    sayfaBant.Q.value = 0.8;
+    sayfaBant.frequency.value = 1500;
 
     // Çıtırtı duygusu tiz uçtan geliyor; tepesi kesiliyor
     const tiz = ctx.createBiquadFilter();
     tiz.type = 'lowpass';
-    tiz.frequency.value = 3000;
+    tiz.frequency.value = 2500;
     tiz.Q.value = 0.7;
 
     sayfaKazanc = ctx.createGain();
@@ -698,7 +698,7 @@ export function createBmoSound({
     sayfaKazanc.gain.setTargetAtTime(hedef, now, 0.025);
     // Yeni bir hareket gelmezse kendiliğinden sussun
     sayfaKazanc.gain.setTargetAtTime(0, now + 0.09, 0.06);
-    sayfaBant.frequency.setTargetAtTime(1400 + Math.sin(Math.PI * oran) * 1500, now, 0.05);
+    sayfaBant.frequency.setTargetAtTime(1050 + Math.sin(Math.PI * oran) * 1150, now, 0.05);
   });
 
   function sayfaSustur() {
