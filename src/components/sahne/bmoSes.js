@@ -748,10 +748,6 @@ export function createBmoSound({
   }
 
   /**
-   * Sayfa karşı yaprağa değdiği an: referanstaki doruk vuruşu ve ardından
-   * hızla sönen çıtırtı kuyruğu. Kapakta üstüne tok bir vuruş biniyor.
-   */
-  /**
    * Sayfa karşı yaprağa değdiği an.
    *
    * Önce tok bir vuruştu, ses olarak öne çıkıp rahatsız ediyordu. Artık
@@ -789,67 +785,6 @@ export function createBmoSound({
       vol: agir ? 0.03 : 0.022,
       attack: 0.002,
       wet: 0.08,
-    });
-  });
-
-  function sayfaSustur() {
-    if (!sayfaKazanc || !ctx) return;
-    const now = ctx.currentTime;
-    sayfaKazanc.gain.cancelScheduledValues(now);
-    sayfaKazanc.gain.setTargetAtTime(0, now, 0.04);
-  }
-
-  /**
-   * Sayfa karşı yaprağa değdiği an: referanstaki doruk vuruşu ve ardından
-   * hızla sönen çıtırtı kuyruğu. Kapakta üstüne tok bir vuruş biniyor.
-   */
-  const sayfaKondu = whenAudible((agir = false) => {
-    if (inisTampon) {
-      const kaynak = ctx.createBufferSource();
-      kaynak.buffer = inisTampon;
-      kaynak.playbackRate.value = agir ? 0.82 : 1.06;
-      const kazanc = ctx.createGain();
-      kazanc.gain.value = agir ? 0.5 : 0.32;
-      kaynak.connect(kazanc).connect(effects);
-      kaynak.start();
-      if (!agir) return;
-      tone({
-        at: 0.015,
-        wave: 'sine',
-        freq: 140,
-        sweep: [[1, 68]],
-        dur: 0.12,
-        vol: 0.05,
-        attack: 0.002,
-        wet: 0.06,
-      });
-      return;
-    }
-    hiss({
-      freq: 1500,
-      sweep: sweepBetween(1500, 2500),
-      q: 1.2,
-      dur: 0.05,
-      vol: agir ? 0.09 : 0.065,
-      attack: 0.002,
-      wet: 0.1,
-    });
-    // kuyruk: aynı çıtırtı dokusundan kısa ve sönen bir parça
-    sayfaZinciri();
-    const now = ctx.currentTime;
-    sayfaKazanc.gain.cancelScheduledValues(now);
-    sayfaKazanc.gain.setValueAtTime(0.045, now + 0.01);
-    sayfaKazanc.gain.setTargetAtTime(0, now + 0.02, 0.03);
-    if (!agir) return;
-    tone({
-      at: 0.012,
-      wave: 'sine',
-      freq: 140,
-      sweep: [[1, 68]],
-      dur: 0.12,
-      vol: 0.045,
-      attack: 0.002,
-      wet: 0.06,
     });
   });
 
