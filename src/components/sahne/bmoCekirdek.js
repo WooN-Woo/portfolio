@@ -415,6 +415,9 @@ export async function createBmo(
     // aydınlatır, gölgeyi şiddeti sıfır olan ayrı bir ışık atar.
     golgeIsigi = /** @type {{x: number, y: number, z: number} | null} */ (null),
     temasGolgesiOpaklik = 0.55,
+    // Gölgenin düştüğü zemin. Varsayılanı geniş; boyalı bir masanın üstünde
+    // ise masanın sınırlarına çekilmeli, yoksa gölge masadan sarkıyor.
+    zemin = { en: 8, boy: 8, x: 0, z: 0 },
   } = {},
 ) {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -471,7 +474,11 @@ export async function createBmo(
     scene.add(golgeKaynagi);
   }
 
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(8, 8), new THREE.ShadowMaterial({ opacity: 0.26 }));
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(zemin.en, zemin.boy),
+    new THREE.ShadowMaterial({ opacity: 0.26 }),
+  );
+  ground.position.set(zemin.x, 0, zemin.z);
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   scene.add(ground);

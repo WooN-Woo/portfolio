@@ -589,10 +589,15 @@ export function createDefter({ scene, renderer, projeler, kapak }) {
     const kapali = i === 0;
     solSayfa.visible = !kapali;
     desteSol.visible = !kapali;
-    kapakSol.visible = !kapali || pay > 0.45;
-    // Kapalı defter yalnızca sağ yarımdan ibaret; sehpanın ortasında dursun
-    // diye sola kaydırılıyor, kapak devrildikçe yerine oturuyor.
-    kitap.position.x = kapali ? (-YARIM_EN / 2) * (1 - pay) : 0;
+    // Sol yarım, kapak devrilip üstüne oturduğu anda beliriyor. Daha erken
+    // gelirse defter yarı açıkken bir de açılmış hâli görünüyor.
+    kapakSol.visible = !kapali || pay > 0.9;
+    // Kapalı defter yalnızca sağ yarımdan ibaret, sehpanın ortasında durur.
+    // Kapak kalkmaya başlarken yerine kayıyor: hareket erken bitsin ki
+    // açılma anında bir şey oynuyormuş gibi görünmesin.
+    kitap.position.x = kapali
+      ? (-YARIM_EN / 2) * (1 - Math.min(1, pay / 0.3))
+      : 0;
 
     const aci = Math.PI * pay;
     bukumUygula(onGeo, aci);

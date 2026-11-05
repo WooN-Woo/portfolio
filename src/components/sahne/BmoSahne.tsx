@@ -114,6 +114,18 @@ function yedekGorsel(renk: string, yuzey: string, harf: string, en: number, boy:
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
 
+/** Defterin açılımları: önce hakkımda, sonra projeler. */
+const SAYFALAR = [
+  HAKKIMDA,
+  ...ICERIK.map((icerik) => ({
+    ad: icerik.ad,
+    yil: icerik.yil,
+    ozet: icerik.ozet,
+    kunye: icerik.kunye,
+    etiketler: icerik.etiketler,
+  })),
+];
+
 export function BmoSahne() {
   const izRef = useRef<HTMLDivElement>(null);
   const tuvalRef = useRef<HTMLCanvasElement>(null);
@@ -166,6 +178,27 @@ export function BmoSahne() {
       });
     };
 
+    /**
+     * Kaydırma durakları: her durak bir sayfa durumu (0 = kapalı defter).
+     * Kullanıcı kaydırmayı bırakınca en yakın durağa oturtuluyor; kaydırma
+     * sürerken karışılmıyor, yoksa parmağın altında sayfa zıplıyor.
+     */
+    const DURAK_SAYISI = SAYFALAR.length + 1;
+    const azHareket = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let hizalamaZamani = 0;
+
+    const hizala = () => {
+      if (durum !== "idle") return;
+      const yol = iz.offsetHeight - window.innerHeight;
+      if (yol <= 0) return;
+      const ust = iz.getBoundingClientRect().top + window.scrollY;
+      const ilerleme = sinirla((window.scrollY - ust) / yol);
+      const adim = Math.round(ilerleme * (DURAK_SAYISI - 1));
+      const hedef = ust + (adim / (DURAK_SAYISI - 1)) * yol;
+      if (Math.abs(window.scrollY - hedef) < 2) return;
+      window.scrollTo({ top: hedef, behavior: azHareket ? "auto" : "smooth" });
+    };
+
     const guncelle = () => {
       if (!defter) return;
       const kutu = iz.getBoundingClientRect();
@@ -174,6 +207,9 @@ export function BmoSahne() {
       const sayfa = defter.setIlerleme(ilerleme);
       // Açılım 0 "hakkımda", kartuşlar ondan sonra başlıyor
       kartuslariYerlestir(sayfa.acilim - 1, sayfa.yerlesme);
+
+      window.clearTimeout(hizalamaZamani);
+      hizalamaZamani = window.setTimeout(hizala, 420);
     };
 
     const ekraniGoster = (icerik: Icerik) => {
@@ -245,6 +281,8 @@ export function BmoSahne() {
         evKaydirma: EV_KAYDIRMA,
         disKartusYerlesimi: true,
         golgeAlani: 4.8,
+        // Gölge masanın üstünde kalsın, ön kenarından sarkmasın
+        zemin: { en: 9, boy: 2.7, x: 1.2, z: -0.35 },
         // Odadaki ışık pencereden, yani arkadan geliyor: gölge öne düşsün
         golgeIsigi: { x: 1.6, y: 5.6, z: -2.2 },
         temasGolgesiOpaklik: 0.62,
@@ -268,16 +306,7 @@ export function BmoSahne() {
         scene: kurulan.scene,
         renderer: kurulan.renderer,
         kapak: KAPAK,
-        projeler: [
-          HAKKIMDA,
-          ...ICERIK.map((icerik) => ({
-            ad: icerik.ad,
-            yil: icerik.yil,
-            ozet: icerik.ozet,
-            kunye: icerik.kunye,
-            etiketler: icerik.etiketler,
-          })),
-        ],
+        projeler: SAYFALAR,
       });
       guncelle();
     })();
@@ -295,6 +324,7 @@ export function BmoSahne() {
       window.removeEventListener("scroll", guncelle);
       window.removeEventListener("resize", guncelle);
       window.removeEventListener("keydown", tusa);
+      window.clearTimeout(hizalamaZamani);
       geriDugme?.removeEventListener("click", kapat);
       gitDugme?.removeEventListener("click", projeyeGit);
       document.body.style.overflow = "";
@@ -308,7 +338,7 @@ export function BmoSahne() {
       <div
         className="bmo-iz"
         ref={izRef}
-        style={{ height: `${(ICERIK.length + 2) * 100}vh` }}
+        style={{ height: `${(SAYFALAR.length + 1) * 100}vh` }}
       >
         <div className="bmo-sahne">
           <div className="bmo-oda">
