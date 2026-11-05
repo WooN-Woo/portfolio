@@ -614,7 +614,7 @@ export function createBmoSound({
     const panner = ctx.createStereoPanner();
     panner.connect(effects);
     const send = ctx.createGain();
-    send.gain.value = 0.12;
+    send.gain.value = 0.07;
     panner.connect(send);
     send.connect(reverbSend);
 
@@ -629,7 +629,9 @@ export function createBmoSound({
   const sayfaAkisi = whenAudible((hiz, oran) => {
     pageChain();
     const now = ctx.currentTime;
-    const hedef = Math.min(0.2, hiz * 0.5);
+    // Sürekli bir ses, kısa bir tıktan çok daha yüksek algılanıyor:
+    // tepe seviyesi öbür efektlerin oldukça altında tutuluyor.
+    const hedef = Math.min(0.05, hiz * 0.12);
     pageGain.gain.cancelScheduledValues(now);
     pageGain.gain.setTargetAtTime(hedef, now, 0.03);
     // Yeni bir hareket gelmezse kendiliğinden sussun
@@ -651,7 +653,7 @@ export function createBmoSound({
       sweep: sweepBetween(agir ? 1100 : 1900, agir ? 600 : 1100),
       q: 1.1,
       dur: agir ? 0.16 : 0.09,
-      vol: agir ? 0.16 : 0.1,
+      vol: agir ? 0.07 : 0.04,
       attack: 0.003,
       wet: 0.14,
     });
@@ -662,7 +664,7 @@ export function createBmoSound({
       freq: 150,
       sweep: [[1, 70]],
       dur: 0.13,
-      vol: 0.16,
+      vol: 0.07,
       attack: 0.002,
       wet: 0.08,
     });
