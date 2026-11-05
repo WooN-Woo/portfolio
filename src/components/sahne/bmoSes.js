@@ -113,6 +113,30 @@ export function createBmoSound({
     );
   }
 
+  // Bu projeye özel ek: defterin sesi gerçek bir kâğıt kaydından geliyor.
+  // Kayıt tek bir sürtmeydi (~0,6 sn), olduğu gibi döngüye alınırsa her
+  // yarım saniyede aynı savrulma tekrarlardı. Bu yüzden kayıttan kesilen
+  // kısa dilimler üst üste bindirilip dikişsiz bir doku üretildi; dosya
+  // olarak o doku ve kaydın gerçek iniş vuruşu duruyor.
+  let dokuTampon = null;
+  let inisTampon = null;
+
+  function defterSesleriniYukle() {
+    for (const [ad, hedef] of [
+      ['sayfa-doku', (b) => (dokuTampon = b)],
+      ['sayfa-inis', (b) => (inisTampon = b)],
+    ]) {
+      fetch(`/sesler/${ad}.wav`)
+        .then((cevap) => {
+          if (!cevap.ok) throw new Error(`HTTP ${cevap.status}`);
+          return cevap.arrayBuffer();
+        })
+        .then((bayt) => ctx.decodeAudioData(bayt))
+        .then(hedef)
+        .catch((hata) => console.warn(`Defter sesi yüklenemedi: ${ad}`, hata));
+    }
+  }
+
   function decodeVoices() {
     downloadVoices();
     downloads?.forEach(async (download) => {
@@ -561,6 +585,7 @@ export function createBmoSound({
         ctx = new AudioContext({ latencyHint: 'interactive' });
         buildGraph();
         decodeVoices();
+        defterSesleriniYukle();
       } catch (error) {
         console.warn('BMO sesi başlatılamadı', error);
         ctx = null;
@@ -650,9 +675,19 @@ export function createBmoSound({
   }
 
   function sayfaZinciri() {
-    if (sayfaKaynak) return;
+    // Dosya gelene kadar sentezlenen doku kullanılıyor; geldiğinde zincir
+    // bir kere yeniden kuruluyor.
+    if (sayfaKaynak && sayfaKaynak.buffer === (dokuTampon ?? citirtiUret())) return;
+    if (sayfaKaynak) {
+      try {
+        sayfaKaynak.stop();
+      } catch {
+        // zaten durmuşsa sorun değil
+      }
+      sayfaKaynak.disconnect();
+    }
     sayfaKaynak = ctx.createBufferSource();
-    sayfaKaynak.buffer = citirtiUret();
+    sayfaKaynak.buffer = dokuTampon ?? citirtiUret();
     sayfaKaynak.loop = true;
 
     sayfaBant = ctx.createBiquadFilter();
@@ -716,7 +751,80 @@ export function createBmoSound({
    * Sayfa karşı yaprağa değdiği an: referanstaki doruk vuruşu ve ardından
    * hızla sönen çıtırtı kuyruğu. Kapakta üstüne tok bir vuruş biniyor.
    */
+  /**
+   * Sayfa karşı yaprağa değdiği an.
+   *
+   * Önce tok bir vuruştu, ses olarak öne çıkıp rahatsız ediyordu. Artık
+   * yalnızca kaydın ilk teması duyuluyor: pes gövde tamamen kesik, seviye
+   * dokunun epey altında. Varlığını ancak hissettirecek kadar.
+   */
   const sayfaKondu = whenAudible((agir = false) => {
+    const now = ctx.currentTime;
+
+    if (inisTampon) {
+      const kaynak = ctx.createBufferSource();
+      kaynak.buffer = inisTampon;
+      kaynak.playbackRate.value = agir ? 1.05 : 1.2;
+
+      // Gövdeyi veren pes uçlar atılıyor: kalan sadece hafif temas
+      const pesKes = ctx.createBiquadFilter();
+      pesKes.type = 'highpass';
+      pesKes.frequency.value = 900;
+
+      const kazanc = ctx.createGain();
+      kazanc.gain.setValueAtTime(agir ? 0.07 : 0.05, now);
+      kazanc.gain.setTargetAtTime(0, now + 0.03, 0.025);
+
+      kaynak.connect(pesKes).connect(kazanc).connect(effects);
+      kaynak.start();
+      kaynak.stop(now + 0.18);
+      return;
+    }
+
+    hiss({
+      freq: 1800,
+      sweep: sweepBetween(1800, 2600),
+      q: 1.2,
+      dur: 0.04,
+      vol: agir ? 0.03 : 0.022,
+      attack: 0.002,
+      wet: 0.08,
+    });
+  });
+
+  function sayfaSustur() {
+    if (!sayfaKazanc || !ctx) return;
+    const now = ctx.currentTime;
+    sayfaKazanc.gain.cancelScheduledValues(now);
+    sayfaKazanc.gain.setTargetAtTime(0, now, 0.04);
+  }
+
+  /**
+   * Sayfa karşı yaprağa değdiği an: referanstaki doruk vuruşu ve ardından
+   * hızla sönen çıtırtı kuyruğu. Kapakta üstüne tok bir vuruş biniyor.
+   */
+  const sayfaKondu = whenAudible((agir = false) => {
+    if (inisTampon) {
+      const kaynak = ctx.createBufferSource();
+      kaynak.buffer = inisTampon;
+      kaynak.playbackRate.value = agir ? 0.82 : 1.06;
+      const kazanc = ctx.createGain();
+      kazanc.gain.value = agir ? 0.5 : 0.32;
+      kaynak.connect(kazanc).connect(effects);
+      kaynak.start();
+      if (!agir) return;
+      tone({
+        at: 0.015,
+        wave: 'sine',
+        freq: 140,
+        sweep: [[1, 68]],
+        dur: 0.12,
+        vol: 0.05,
+        attack: 0.002,
+        wet: 0.06,
+      });
+      return;
+    }
     hiss({
       freq: 1500,
       sweep: sweepBetween(1500, 2500),
