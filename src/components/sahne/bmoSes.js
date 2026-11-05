@@ -728,7 +728,7 @@ export function createBmoSound({
     // sıklaşıyor ve tınısı tizleşiyor — tekerleği hızlandırmak gibi.
     sayfaKaynak.playbackRate.setTargetAtTime(0.6 + yogunluk * 1.25, now, 0.05);
 
-    const hedef = Math.min(0.05, hiz * 0.13);
+    const hedef = Math.min(0.055, hiz * 0.143);
     sayfaKazanc.gain.cancelScheduledValues(now);
     sayfaKazanc.gain.setTargetAtTime(hedef, now, 0.025);
     // Yeni bir hareket gelmezse kendiliğinden sussun
