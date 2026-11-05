@@ -156,7 +156,16 @@ export function createDefter({ scene, renderer, projeler, kapak }) {
   scene.add(kok);
 
   // Defterin alt kenarının masadaki yeri. Sehpa da buna göre kuruluyor.
-  const TABAN_Y = 0.13;
+  //
+  // Defter geriye yatık olduğu için en alçak noktası sayfanın alt kenarı
+  // değil, kapağın alt-arka köşesi. O köşe kaidenin içine girmesin diye
+  // taban yüksekliği kaidenin üstünden hesaplanıyor.
+  const KAIDE_BOY = 0.09;
+  const KAPAK_DERINLIK = 0.0725;
+  const EN_ALCAK = (SAYFA.boy + 0.11) * 0.5 * Math.cos(YATIKLIK)
+    + KAPAK_DERINLIK * Math.sin(YATIKLIK)
+    - (SAYFA.boy * 0.5) * Math.cos(YATIKLIK);
+  const TABAN_Y = KAIDE_BOY + EN_ALCAK + 0.008;
   const TABAN_Z = 0.12;
   /** Defter düzleminin normali — sehpa parçaları bu yön boyunca kaydırılıyor. */
   const normal = new THREE.Vector3(0, Math.sin(YATIKLIK), Math.cos(YATIKLIK));
@@ -180,8 +189,8 @@ export function createDefter({ scene, renderer, projeler, kapak }) {
   const sehpa = new THREE.Group();
   kok.add(sehpa);
 
-  const kaide = tahta(KITAP_EN + 0.26, 0.085, 0.6, RENK.sehpa, 0.035);
-  kaide.position.set(0, 0.043, TABAN_Z - 0.22);
+  const kaide = tahta(KITAP_EN + 0.26, KAIDE_BOY, 0.6, RENK.sehpa, 0.035);
+  kaide.position.set(0, KAIDE_BOY / 2, TABAN_Z - 0.22);
   sehpa.add(kaide);
 
   const tabla = tahta(KITAP_EN + 0.14, 0.055, SAYFA.boy * 0.92, RENK.sehpa, 0.025);
@@ -191,9 +200,11 @@ export function createDefter({ scene, renderer, projeler, kapak }) {
   tabla.position.addScaledVector(normal, -0.125);
   sehpa.add(tabla);
 
-  const cita = tahta(KITAP_EN + 0.14, 0.095, 0.065, RENK.sehpaKoyu, 0.028);
+  // Çıta defterin önünde duran bir ray: alt ucu kaideye değiyor, üst ucu
+  // sayfanın alt kenarını birkaç milim örtüyor.
+  const cita = tahta(KITAP_EN + 0.14, 0.15, 0.06, RENK.sehpaKoyu, 0.026);
   cita.rotation.x = -YATIKLIK;
-  cita.position.set(0, TABAN_Y + 0.005, TABAN_Z);
+  cita.position.set(0, TABAN_Y - 0.028, TABAN_Z);
   cita.position.addScaledVector(normal, 0.05);
   sehpa.add(cita);
 
