@@ -631,10 +631,13 @@ export function createDefter({ scene, renderer, projeler, kapak, dokuOlcek = 1 }
     bukumUygula(arkaGeo, aci);
 
     const yakin = Math.round(adim);
-    // Kartuş yalnızca sayfa oturduğunda görünüyor. Pencere geniş olursa
-    // kartuş, çevrilen yaprak daha sol sayfanın üstüne inerken büyümeye
-    // başlıyor ve yaprağın içinden geçiyor.
-    const yerlesme = 1 - Math.min(1, Math.abs(adim - yakin) / 0.045);
+    // Kartuş sol sayfada duruyor; çevrilen yaprak ise dönüşün ilk yarısında
+    // sağ tarafta, yalnızca son çeyrekte sol sayfanın üstüne iniyor.
+    // Bu yüzden pencere tek yönlü dar: durak geçildikten sonra kartuş uzun
+    // süre durur, bir sonraki durağa yaklaşırken son anda kaybolur.
+    const fark = adim - yakin;
+    const pencere = fark > 0 ? 0.45 : 0.03;
+    const yerlesme = 1 - Math.min(1, Math.abs(fark) / pencere);
     // yaprak: o an çevrilmekte olan yaprağın sırası (0 = dış kapak)
     return { acilim: yakin - 1, yerlesme, yaprak: i, pay };
   }
