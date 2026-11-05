@@ -588,48 +588,52 @@ export function createBmoSound({
   // Burada ses tane tane üretiliyor — her tane birkaç milisaniyelik, dar
   // bantlı, rastgele perdeden bir çıtırtı. Çevirme hızlandıkça taneler
   // sıklaşıyor, ses de doğal olarak gürleşiyor.
-  function tane(at, oran, yogunluk) {
+  // Taneler referanstaki bantta kalıyor: 1–4 kHz dışında neredeyse enerji yok.
+  function tane(at, yogunluk) {
     hiss({
       at,
-      freq: 1600 + Math.random() * 4200 + Math.sin(Math.PI * oran) * 1100,
-      q: 3 + Math.random() * 5,
-      dur: 0.004 + Math.random() * 0.009,
-      vol: 0.012 + yogunluk * 0.022,
+      freq: 1000 + Math.random() * 2800,
+      q: 4 + Math.random() * 5,
+      dur: 0.003 + Math.random() * 0.007,
+      vol: 0.01 + yogunluk * 0.02,
       attack: 0.0008,
-      pan: (Math.random() - 0.5) * 0.5,
+      pan: (Math.random() - 0.5) * 0.4,
       wet: 0.05,
     });
   }
 
   /**
-   * Sayfa çevrilmeye başlayınca bir kez çalan süzülme: kâğıdın havada ve
-   * desteye sürtünerek kayması. Sürekli ses yerine tek atış, çünkü kâğıt
-   * dönerken kesintisiz hışırdamıyor — bir kerede süzülüyor.
+   * Sayfa çevrilmeye başlayınca bir kez çalan süzülme.
    *
-   * hiz: sayfanın saniyedeki dönüş oranı. Hızlı çevirince ses kısalıp
+   * Değerler elimizdeki kâğıt sesinin ölçümünden geliyor:
+   *   süre 75 ms; zarf yavaş çıkıp hızlı iniyor (tepe, sesin %67'sinde)
+   *   enerjinin %96'sı 900–4000 Hz arasında, altı ve üstü neredeyse boş
+   *   parlaklık 850 Hz'den 2100 Hz'e çıkıp orada duruyor
+   *   tepe/ortalama oranı 12 — yani ses düz değil, çok taneli
+   *
+   * hiz: sayfanın saniyedeki dönüş oranı. Hızlı çevirince kısalıp biraz
    * parlıyor, yavaş çevirince uzayıp yumuşuyor.
    */
   const sayfaKaydi = whenAudible((hiz = 0.5) => {
-    const guc = Math.min(1, 0.4 + hiz * 0.55);
-    const sure = 0.3 - guc * 0.1;
+    const guc = Math.min(1, 0.45 + hiz * 0.55);
+    const sure = 0.095 - guc * 0.033;
     const pan = (Math.random() - 0.5) * 0.3;
 
     hiss({
-      freq: 700,
-      sweep: sweepBetween(700, 1100 + guc * 2800),
-      q: 0.55,
+      freq: 850,
+      sweep: sweepBetween(850, 1900 + guc * 500),
+      q: 1.6,
       dur: sure,
-      vol: 0.055 * guc,
-      attack: sure * 0.4,
+      // tepe sesin üçte ikisinde: yavaş çıkış, hızlı iniş
+      attack: sure * 0.67,
+      vol: 0.05 * guc,
       pan,
-      wet: 0.14,
+      wet: 0.12,
     });
 
-    // Üstüne seyrek taneler: düz süzülme kum gibi duyuluyor, kâğıdın
-    // dokusunu bu çıtırtılar veriyor.
-    const adet = 3 + Math.round(guc * 4);
+    const adet = 4 + Math.round(guc * 5);
     for (let i = 0; i < adet; i += 1) {
-      tane(sure * (0.15 + Math.random() * 0.7), 0.5, guc * 0.5);
+      tane(sure * (0.1 + Math.random() * 0.85), guc * 0.6);
     }
   });
 
@@ -640,7 +644,7 @@ export function createBmoSound({
    */
   const sayfaKondu = whenAudible((agir = false) => {
     for (let i = 0; i < (agir ? 5 : 3); i += 1) {
-      tane(i * 0.012 * Math.random(), 0.5, agir ? 0.5 : 0.3);
+      tane(i * 0.012 * Math.random(), agir ? 0.5 : 0.3);
     }
     tone({
       at: 0.012,
