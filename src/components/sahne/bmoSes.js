@@ -628,19 +628,22 @@ export function createBmoSound({
     sonTane = 0;
   }
 
-  /** Sayfa karşı yaprağın üstüne düştüğünde çıkan kısa tık. */
+  /**
+   * Sayfa karşı yaprağın üstüne düştüğünde. Çıtırtı dönerken, tok ses
+   * inerken: kâğıdın desteye değdiği an. Kapak ağır olduğu için daha pes
+   * ve uzun, sayfa hafif olduğu için tiz ve kısa.
+   */
   const sayfaKondu = whenAudible((agir = false) => {
     for (let i = 0; i < (agir ? 5 : 3); i += 1) {
       tane(i * 0.012 * Math.random(), 0.5, agir ? 0.5 : 0.3);
     }
-    if (!agir) return;
     tone({
-      at: 0.015,
+      at: 0.012,
       wave: 'sine',
-      freq: 140,
-      sweep: [[1, 68]],
-      dur: 0.12,
-      vol: 0.05,
+      freq: agir ? 140 : 205,
+      sweep: [[1, agir ? 68 : 105]],
+      dur: agir ? 0.12 : 0.075,
+      vol: agir ? 0.05 : 0.032,
       attack: 0.002,
       wet: 0.06,
     });
