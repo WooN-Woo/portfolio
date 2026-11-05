@@ -588,8 +588,6 @@ export function createBmoSound({
   // Burada ses tane tane üretiliyor — her tane birkaç milisaniyelik, dar
   // bantlı, rastgele perdeden bir çıtırtı. Çevirme hızlandıkça taneler
   // sıklaşıyor, ses de doğal olarak gürleşiyor.
-  let sonTane = 0;
-
   function tane(at, oran, yogunluk) {
     hiss({
       at,
@@ -604,29 +602,36 @@ export function createBmoSound({
   }
 
   /**
-   * hiz: sayfanın saniyedeki dönüş oranı (0–1 arası yolun kaçta kaçı).
-   * oran: sayfanın ne kadar döndüğü (0 kapalı, 1 tam dönmüş).
+   * Sayfa çevrilmeye başlayınca bir kez çalan süzülme: kâğıdın havada ve
+   * desteye sürtünerek kayması. Sürekli ses yerine tek atış, çünkü kâğıt
+   * dönerken kesintisiz hışırdamıyor — bir kerede süzülüyor.
+   *
+   * hiz: sayfanın saniyedeki dönüş oranı. Hızlı çevirince ses kısalıp
+   * parlıyor, yavaş çevirince uzayıp yumuşuyor.
    */
-  const sayfaAkisi = whenAudible((hiz, oran) => {
-    const yogunluk = Math.min(1, hiz * 1.4);
-    if (yogunluk < 0.05) return;
+  const sayfaKaydi = whenAudible((hiz = 0.5) => {
+    const guc = Math.min(1, 0.4 + hiz * 0.55);
+    const sure = 0.3 - guc * 0.1;
+    const pan = (Math.random() - 0.5) * 0.3;
 
-    const now = ctx.currentTime;
-    const aralik = 0.014 + (1 - yogunluk) * 0.055;
-    let t = Math.max(now + 0.005, sonTane);
-    let adet = 0;
-    // Bir sonraki kaydırma olayına kadar yetecek kadar tane planlanıyor
-    while (t < now + 0.1 && adet < 8) {
-      tane(t - now, oran, yogunluk);
-      t += aralik * (0.55 + Math.random() * 0.9);
-      adet += 1;
+    hiss({
+      freq: 700,
+      sweep: sweepBetween(700, 1100 + guc * 2800),
+      q: 0.55,
+      dur: sure,
+      vol: 0.055 * guc,
+      attack: sure * 0.4,
+      pan,
+      wet: 0.14,
+    });
+
+    // Üstüne seyrek taneler: düz süzülme kum gibi duyuluyor, kâğıdın
+    // dokusunu bu çıtırtılar veriyor.
+    const adet = 3 + Math.round(guc * 4);
+    for (let i = 0; i < adet; i += 1) {
+      tane(sure * (0.15 + Math.random() * 0.7), 0.5, guc * 0.5);
     }
-    sonTane = t;
   });
-
-  function sayfaSustur() {
-    sonTane = 0;
-  }
 
   /**
    * Sayfa karşı yaprağın üstüne düştüğünde. Çıtırtı dönerken, tok ses
@@ -651,8 +656,7 @@ export function createBmoSound({
 
   return {
     isOn: () => on,
-    sayfaAkisi,
-    sayfaSustur,
+    sayfaKaydi,
     sayfaKondu,
     setOn(value) {
       on = value;

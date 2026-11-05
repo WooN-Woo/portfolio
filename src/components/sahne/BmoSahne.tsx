@@ -208,6 +208,7 @@ export function BmoSahne() {
     let sonDikey: boolean | null = null;
     let sonYaprak: number | null = null;
     let oncekiPay = 0;
+    let oncekiDonuyor = false;
     let oncekiZaman = performance.now();
 
     const ekranOrani = () => window.innerWidth / window.innerHeight;
@@ -277,7 +278,6 @@ export function BmoSahne() {
 
       if (dikey) {
         // Kaydırma yok: BMO ve kartuşlar tek ekranda duruyor
-        ses.sayfaSustur();
         return;
       }
 
@@ -287,17 +287,19 @@ export function BmoSahne() {
       kartuslariYerlestir(sayfa.acilim - 1, sayfa.yerlesme);
 
       // Yeni bir yaprak çevrilmeye başladığında ses. İlk çizimde değil.
-      // Sayfa sesi çevirmenin hızını takip ediyor: yavaş çevirince hafif
-      // hışırtı, hızlı çevirince gür. Yaprak değiştiği an sayfa karşı tarafa
-      // düşmüş demektir, o anda kısa bir tık geliyor.
+      // Sayfa sesi iki parça: dönmeye başlarken bir süzülme, karşı yaprağa
+      // düşerken tok bir ses. Arada sürekli bir ses yok — kâğıt dönerken
+      // kesintisiz hışırdamıyor.
       const simdi = performance.now();
       const gecen = Math.max(0.016, (simdi - oncekiZaman) / 1000);
+      const hiz = Math.abs(sayfa.pay - oncekiPay) / gecen;
+      const donuyor = sayfa.pay > 0.03 && sayfa.pay < 0.97;
       const yaprakDegisti = sonYaprak !== null && sayfa.yaprak !== sonYaprak;
-      ses.sayfaAkisi(
-        yaprakDegisti ? 0 : Math.abs(sayfa.pay - oncekiPay) / gecen,
-        sayfa.pay,
-      );
+
+      if (donuyor && !oncekiDonuyor) ses.sayfaKaydi(hiz);
       if (yaprakDegisti) ses.sayfaKondu(sonYaprak === 0 || sayfa.yaprak === 0);
+
+      oncekiDonuyor = donuyor;
       oncekiPay = sayfa.pay;
       oncekiZaman = simdi;
       sonYaprak = sayfa.yaprak;
