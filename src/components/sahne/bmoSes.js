@@ -583,43 +583,24 @@ export function createBmoSound({
 
   // Bu projeye özel ek (orijinalde defter yok): defterin sesleri.
   //
-  // Sayfa sesi tek bir efekt değil, çevirmenin hızını takip eden sürekli bir
-  // hışırtı: yavaş çevirince hafif, hızlı çevirince gür çıkıyor. Tek seferlik
-  // çalsaydı ses hep sayfa tam kapandığında duyulurdu.
-  //
-  // Kâğıdın tınısı tizde: önce pes uçlar kesiliyor, kalan gürültü dar bir
-  // bantta süzülüyor. Bant, sayfa döndükçe yukarı kayıyor.
-  let pageSource = null;
-  let pageGain = null;
-  let pageBand = null;
+  // Kâğıt düz bir hışırtı değil: lifler ayrılırken yüzlerce minik çıtırtı
+  // çıkıyor. Sürekli süzülmüş gürültü bu yüzden kum gibi duyuluyordu.
+  // Burada ses tane tane üretiliyor — her tane birkaç milisaniyelik, dar
+  // bantlı, rastgele perdeden bir çıtırtı. Çevirme hızlandıkça taneler
+  // sıklaşıyor, ses de doğal olarak gürleşiyor.
+  let sonTane = 0;
 
-  function pageChain() {
-    if (pageSource) return;
-    pageSource = ctx.createBufferSource();
-    pageSource.buffer = noise;
-    pageSource.loop = true;
-
-    const highpass = ctx.createBiquadFilter();
-    highpass.type = 'highpass';
-    highpass.frequency.value = 1200;
-
-    pageBand = ctx.createBiquadFilter();
-    pageBand.type = 'bandpass';
-    pageBand.Q.value = 0.7;
-    pageBand.frequency.value = 2400;
-
-    pageGain = ctx.createGain();
-    pageGain.gain.value = 0;
-
-    const panner = ctx.createStereoPanner();
-    panner.connect(effects);
-    const send = ctx.createGain();
-    send.gain.value = 0.07;
-    panner.connect(send);
-    send.connect(reverbSend);
-
-    pageSource.connect(highpass).connect(pageBand).connect(pageGain).connect(panner);
-    pageSource.start(ctx.currentTime, Math.random() * 0.5);
+  function tane(at, oran, yogunluk) {
+    hiss({
+      at,
+      freq: 1600 + Math.random() * 4200 + Math.sin(Math.PI * oran) * 1100,
+      q: 3 + Math.random() * 5,
+      dur: 0.004 + Math.random() * 0.009,
+      vol: 0.012 + yogunluk * 0.022,
+      attack: 0.0008,
+      pan: (Math.random() - 0.5) * 0.5,
+      wet: 0.05,
+    });
   }
 
   /**
@@ -627,46 +608,41 @@ export function createBmoSound({
    * oran: sayfanın ne kadar döndüğü (0 kapalı, 1 tam dönmüş).
    */
   const sayfaAkisi = whenAudible((hiz, oran) => {
-    pageChain();
+    const yogunluk = Math.min(1, hiz * 1.4);
+    if (yogunluk < 0.05) return;
+
     const now = ctx.currentTime;
-    // Sürekli bir ses, kısa bir tıktan çok daha yüksek algılanıyor:
-    // tepe seviyesi öbür efektlerin oldukça altında tutuluyor.
-    const hedef = Math.min(0.05, hiz * 0.12);
-    pageGain.gain.cancelScheduledValues(now);
-    pageGain.gain.setTargetAtTime(hedef, now, 0.03);
-    // Yeni bir hareket gelmezse kendiliğinden sussun
-    pageGain.gain.setTargetAtTime(0, now + 0.1, 0.07);
-    pageBand.frequency.setTargetAtTime(1800 + Math.sin(Math.PI * oran) * 2600, now, 0.06);
+    const aralik = 0.014 + (1 - yogunluk) * 0.055;
+    let t = Math.max(now + 0.005, sonTane);
+    let adet = 0;
+    // Bir sonraki kaydırma olayına kadar yetecek kadar tane planlanıyor
+    while (t < now + 0.1 && adet < 8) {
+      tane(t - now, oran, yogunluk);
+      t += aralik * (0.55 + Math.random() * 0.9);
+      adet += 1;
+    }
+    sonTane = t;
   });
 
   function sayfaSustur() {
-    if (!pageGain || !ctx) return;
-    const now = ctx.currentTime;
-    pageGain.gain.cancelScheduledValues(now);
-    pageGain.gain.setTargetAtTime(0, now, 0.05);
+    sonTane = 0;
   }
 
   /** Sayfa karşı yaprağın üstüne düştüğünde çıkan kısa tık. */
   const sayfaKondu = whenAudible((agir = false) => {
-    hiss({
-      freq: agir ? 1100 : 1900,
-      sweep: sweepBetween(agir ? 1100 : 1900, agir ? 600 : 1100),
-      q: 1.1,
-      dur: agir ? 0.16 : 0.09,
-      vol: agir ? 0.07 : 0.04,
-      attack: 0.003,
-      wet: 0.14,
-    });
+    for (let i = 0; i < (agir ? 5 : 3); i += 1) {
+      tane(i * 0.012 * Math.random(), 0.5, agir ? 0.5 : 0.3);
+    }
     if (!agir) return;
     tone({
-      at: 0.01,
+      at: 0.015,
       wave: 'sine',
-      freq: 150,
-      sweep: [[1, 70]],
-      dur: 0.13,
-      vol: 0.07,
+      freq: 140,
+      sweep: [[1, 68]],
+      dur: 0.12,
+      vol: 0.05,
       attack: 0.002,
-      wet: 0.08,
+      wet: 0.06,
     });
   });
 
