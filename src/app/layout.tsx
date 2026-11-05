@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
-import { Archivo, IBM_Plex_Mono, Patrick_Hand, Source_Serif_4 } from "next/font/google";
+import {
+  Archivo,
+  IBM_Plex_Mono,
+  Patrick_Hand,
+  Press_Start_2P,
+  Source_Serif_4,
+  VT323,
+} from "next/font/google";
 import { profile } from "@/content/site";
 import "./globals.css";
 
@@ -25,6 +32,21 @@ const patrickHand = Patrick_Hand({
   display: "swap",
 });
 
+// BMO'nun ekranındaki yazılar — piksel başlık ve LCD gövde
+const pressStart = Press_Start_2P({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-piksel",
+  display: "swap",
+});
+
+const vt323 = VT323({
+  subsets: ["latin", "latin-ext"],
+  weight: "400",
+  variable: "--font-lcd",
+  display: "swap",
+});
+
 const plexMono = IBM_Plex_Mono({
   subsets: ["latin", "latin-ext"],
   weight: ["400", "500"],
@@ -47,7 +69,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="tr" className={`${archivo.variable} ${sourceSerif.variable} ${plexMono.variable} ${patrickHand.variable}`}>
+    <html lang="tr" className={`${archivo.variable} ${sourceSerif.variable} ${plexMono.variable} ${patrickHand.variable} ${pressStart.variable} ${vt323.variable}`}>
       <body>
         {/* JavaScript kapalıysa hareketler devre dışı kalır, içerik olduğu gibi görünür. */}
         <noscript>

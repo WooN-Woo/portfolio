@@ -2,8 +2,14 @@
 // adarkeser.com'daki bmoScene bundle'ından çıkarıldı, okunur hale getirildi.
 // Ölçüler, renkler ve animasyon değerleri orijinalle birebir aynıdır.
 //
-// Oda, kartuşlar, ses ve arka plana göre kamera hizalama dahil değildir.
+// Oda, ses ve arka plana göre kamera hizalama dahil değildir.
 // Onların orijinali: original/bmo.pretty.js
+//
+// Kartuşlar: projects dizisi verilirse her proje için bir kartuş oluşur.
+//   { name, shortName?, color, surface, face?, shot?: { src } }
+//   bmo.insert(i) takar, bmo.eject(i) geri çıkarır (akış için bkz. index.html)
+//   face ve shot görselleri aynı alan adından gelmeli ya da CORS izni olmalı,
+//   yoksa tarayıcı canvas dokusunu WebGL'e yüklemeyi reddeder.
 //
 // Zoom orijinaldeki kamera yolunun aynısıdır, ama kartuşa bağlı değildir:
 //   tıklama: onButton içinde bmo.zoomIn() çağır (bkz. index.html)
@@ -36,6 +42,8 @@ const TURN_Y = 0.62; // BMO izleyiciye hafif yan durur
 const FOV = 30;
 const FACE_W = 640;
 const FACE_H = 450;
+const CART = { w: 0.4 * BODY_W, l: 0.46, t: 0.028, out: 0.06 };
+const CART_LABEL = { w: 0.31, h: 0.349, px: [480, 540] };
 
 // ---------------------------------------------------------------- renkler
 const COLOR = {
@@ -296,14 +304,110 @@ function drawContactShadow() {
   return canvas;
 }
 
+function loadImage(src) {
+  return new Promise((resolve) => {
+    if (!src) return resolve(null);
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => resolve(null);
+    image.src = src;
+  });
+}
+
+function roundedRectPath(ctx, x, y, w, h, r) {
+  if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);
+  else ctx.rect(x, y, w, h);
+}
+
+// Etiket rengi açıksa koyu, koyuysa beyaz yazı
+function readableInk(hex) {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.55 ? '#14130f' : '#ffffff';
+}
+
+// Kartuş etiketi: ekran görüntüsü, proje ikonu ve piksel fontla ad.
+function drawCartLabel(project, icon, shot) {
+  const [w, h] = CART_LABEL.px;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = project.color;
+  ctx.fillRect(0, 0, w, h);
+
+  const art = { x: 22, y: 22, w: w - 44, h: 352 };
+  ctx.save();
+  ctx.beginPath();
+  roundedRectPath(ctx, art.x, art.y, art.w, art.h, 16);
+  ctx.clip();
+  ctx.fillStyle = project.surface;
+  ctx.fillRect(art.x, art.y, art.w, art.h);
+  if (shot) {
+    const scale = Math.max(art.w / shot.width, art.h / shot.height);
+    const sw = art.w / scale;
+    const sh = art.h / scale;
+    ctx.drawImage(shot, (shot.width - sw) / 2, (shot.height - sh) * 0.35, sw, sh, art.x, art.y, art.w, art.h);
+  }
+  const fade = ctx.createLinearGradient(0, art.y, 0, art.y + art.h);
+  fade.addColorStop(0.6, 'rgba(0,0,0,0)');
+  fade.addColorStop(1, 'rgba(0,0,0,0.28)');
+  ctx.fillStyle = fade;
+  ctx.fillRect(art.x, art.y, art.w, art.h);
+  ctx.restore();
+
+  const rowY = art.y + art.h + 18;
+  if (icon) {
+    ctx.save();
+    ctx.beginPath();
+    roundedRectPath(ctx, 22, rowY, 120, 120, 27);
+    ctx.clip();
+    ctx.fillStyle = project.surface;
+    ctx.fillRect(22, rowY, 120, 120);
+    ctx.drawImage(icon, 22, rowY, 120, 120);
+    ctx.restore();
+  }
+
+  // Ad sığana kadar font küçülür
+  const name = (project.shortName ?? project.name).toUpperCase();
+  let fontSize = 30;
+  ctx.font = `${fontSize}px "Press Start 2P", monospace`;
+  while (ctx.measureText(name).width > w - 190 && fontSize > 14) {
+    fontSize -= 2;
+    ctx.font = `${fontSize}px "Press Start 2P", monospace`;
+  }
+  ctx.fillStyle = readableInk(project.color);
+  ctx.textBaseline = 'middle';
+  ctx.fillText(name, 164, rowY + 62);
+
+  // Plastik parlaması
+  const shine = ctx.createLinearGradient(0, 0, w, h);
+  shine.addColorStop(0, 'rgba(255,255,255,0.2)');
+  shine.addColorStop(0.45, 'rgba(255,255,255,0)');
+  ctx.fillStyle = shine;
+  ctx.fillRect(0, 0, w, h);
+  return canvas;
+}
+
 // ---------------------------------------------------------------- ana fonksiyon
-export function createBmo(canvas, { onButton, evUzaklik = 1, evKaydirma = { x: 0, y: 0 } } = {}) {
-  // Bu projeye özel ek (orijinalde yok): BMO tuvalin tam ortasında değil,
-  // arka plandaki masanın boş köşesinde dursun diye kamera yana kaydırılıyor.
-  // Kaydırma görünen alanın oranı cinsinden; böylece ekran oranı değişince
-  // BMO masadan kaymıyor. Zoom ilerledikçe kaydırma kendiliğinden sıfırlanıyor,
-  // çünkü kamera ekranın tam karşısına gidiyor.
-  const kaydirma = evKaydirma;
+export async function createBmo(
+  canvas,
+  {
+    projects = /** @type {any[]} */ ([]),
+    onPick = /** @type {((index: number) => void) | undefined} */ (undefined),
+    onHover = /** @type {((index: number | null) => void) | undefined} */ (undefined),
+    onButton = /** @type {((name: string) => void) | undefined} */ (undefined),
+    // Bu projeye özel ek (orijinalde yok): BMO tuvalin tam ortasında değil,
+    // arka plandaki masanın köşesinde dursun diye kameranın ev konumu
+    // kaydırılıyor. Kaydırma görünen alanın oranı cinsinden, böylece ekran
+    // oranı değişince BMO masadan kaymıyor. Zoom ilerledikçe kaydırma
+    // kendiliğinden sıfırlanır, çünkü kamera ekranın tam karşısına gider.
+    evUzaklik = 1,
+    evKaydirma = { x: 0, y: 0 },
+    // Kartuşların yerini dışarısı belirliyorsa (defterin sayfasına
+    // oturtuluyorlar) çekirdeğin kendi yerleşimi devre dışı kalır.
+    disKartusYerlesimi = false,
+  } = {},
+) {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -312,6 +416,16 @@ export function createBmo(canvas, { onButton, evUzaklik = 1, evKaydirma = { x: 0
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.setClearColor(0, 0);
+
+  // Etiketler bir kez çizildiği için font ve görseller önce yüklenir
+  await Promise.all([
+    document.fonts?.load('20px "Press Start 2P"').catch(() => {}),
+    document.fonts?.ready,
+  ]);
+  const [icons, shots] = await Promise.all([
+    Promise.all(projects.map((p) => loadImage(p.face))),
+    Promise.all(projects.map((p) => loadImage(p.shot?.src))),
+  ]);
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(FOV, 1, 0.05, 60);
@@ -462,6 +576,21 @@ export function createBmo(canvas, { onButton, evUzaklik = 1, evKaydirma = { x: 0
     root.add(leg.group);
   }
 
+  // BMO'yu çevreleyen kutunun köşeleri: kartuşlar buna göre dizilir
+  root.rotation.y = 0;
+  scene.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(root);
+  root.rotation.y = TURN_Y;
+  scene.updateMatrixWorld(true);
+  const bodyCorners = [];
+  for (const x of [bounds.min.x, bounds.max.x]) {
+    for (const y of [bounds.min.y, bounds.max.y]) {
+      for (const z of [bounds.min.z, bounds.max.z]) {
+        bodyCorners.push(vec3(x, y, z).applyMatrix4(root.matrixWorld));
+      }
+    }
+  }
+
   // Temas gölgesi
   const contactShadow = new THREE.Mesh(
     new THREE.PlaneGeometry(1.7, 1.5),
@@ -484,12 +613,18 @@ export function createBmo(canvas, { onButton, evUzaklik = 1, evKaydirma = { x: 0
 
   // ------------------------------------------------------------- yüz
   const face = {
+    mode: 'face', // face | boot (kartuş takılıyken açılış ekranı)
     mood: 'idle', // idle | happy | surprised | look
     blink: 0,
     talking: false,
     talk: 0,
     talkTarget: null,
     look: { x: 0, y: 0 },
+    app: null,
+    icon: null,
+    pop: 0,
+    chars: 0,
+    flash: 0,
     dirty: true,
   };
   let moodTimer = 0;
@@ -516,6 +651,46 @@ export function createBmo(canvas, { onButton, evUzaklik = 1, evKaydirma = { x: 0
     ctx.strokeStyle = COLOR.faceInk;
     ctx.lineCap = 'round';
 
+    if (face.mode === 'face') drawExpression(ctx, w, h);
+    else if (face.app) drawBootScreen(ctx, w, h);
+
+    // LCD tarama çizgileri
+    ctx.fillStyle = 'rgba(18, 59, 49, 0.06)';
+    for (let y = 0; y < h; y += 4) ctx.fillRect(0, y, w, 1.5);
+
+    // Kartuş oturduğu anda ekran beyaz parlayıp açılır
+    if (face.flash > 0) {
+      ctx.fillStyle = `rgba(240, 255, 249, ${face.flash})`;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    faceTexture.needsUpdate = true;
+    face.dirty = false;
+  }
+
+  // Açılış ekranı: ikon büyüyerek gelir, ad harf harf yazılır
+  function drawBootScreen(ctx, w, h) {
+    const size = 156 * (0.9 + 0.1 * face.pop);
+    const x = w / 2 - size / 2;
+    const y = h * 0.4 - size / 2;
+    ctx.globalAlpha = face.pop;
+    ctx.save();
+    ctx.beginPath();
+    roundedRectPath(ctx, x, y, size, size, size * 0.22);
+    ctx.clip();
+    ctx.fillStyle = face.app.surface;
+    ctx.fillRect(x, y, size, size);
+    if (face.icon) ctx.drawImage(face.icon, x, y, size, size);
+    ctx.restore();
+    ctx.globalAlpha = 1;
+
+    const name = (face.app.shortName ?? face.app.name).toUpperCase();
+    ctx.font = '26px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(name.slice(0, face.chars), w / 2, h * 0.82);
+  }
+
+  function drawExpression(ctx, w, h) {
     const offsetX = face.look.x * 16;
     const offsetY = face.look.y * 10 + (face.mood === 'look' ? 26 : 0);
 
@@ -572,13 +747,258 @@ export function createBmo(canvas, { onButton, evUzaklik = 1, evKaydirma = { x: 0
       ctx.arc(mouthX, y - radius * Math.cos(angle), radius, Math.PI / 2 - angle, Math.PI / 2 + angle);
     }
     ctx.stroke();
+  }
 
-    // LCD tarama çizgileri
-    ctx.fillStyle = 'rgba(18, 59, 49, 0.06)';
-    for (let y = 0; y < h; y += 4) ctx.fillRect(0, y, w, 1.5);
+  // ------------------------------------------------------------- kartuşlar
+  const cartMeshes = [];
+  const carts = projects.map((project, index) => {
+    const group = new THREE.Group();
+    group.add(new THREE.Mesh(new RoundedBoxGeometry(CART.w, CART.l, CART.t, 2, 0.012), toon('#33332f')));
 
-    faceTexture.needsUpdate = true;
-    face.dirty = false;
+    const label = new THREE.Mesh(
+      new THREE.PlaneGeometry(CART_LABEL.w, CART_LABEL.h),
+      new THREE.MeshBasicMaterial({
+        map: canvasTexture(drawCartLabel(project, icons[index], shots[index]), renderer),
+      }),
+    );
+    label.position.set(0, 0.035, CART.t / 2 + 0.001);
+    group.add(label);
+
+    // Alttaki tutma çizgileri
+    for (let i = 0; i < 3; i++) {
+      const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.008, 0.004), toon('#272725'));
+      ridge.position.set(0, -0.165 - i * 0.022, CART.t / 2 + 0.001);
+      group.add(ridge);
+    }
+
+    // Alt kenar projenin renginde
+    const edge = new THREE.Mesh(new THREE.PlaneGeometry(CART.w - 0.04, CART.t - 0.01), toon(project.color));
+    edge.rotation.x = Math.PI / 2;
+    edge.position.y = -CART.l / 2 - 0.001;
+    group.add(edge);
+
+    addOutline(group.children[0], 0.008);
+    group.traverse((o) => {
+      if (!o.isMesh || o.userData.hull) return;
+      o.castShadow = true;
+      o.userData.cart = index;
+      cartMeshes.push(o);
+    });
+    scene.add(group);
+
+    return {
+      group,
+      label,
+      rest: { position: vec3(), tilt: new THREE.Quaternion(), face: new THREE.Quaternion(), scale: 1 },
+      hover: 0,
+      flying: false,
+      seed: index * 1.7,
+    };
+  });
+
+  let hovered = null;
+  let highlighted = null;
+
+  function setHover(index) {
+    if (index === hovered) return;
+    hovered = index;
+    onHover?.(index);
+  }
+
+  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, reducedMotion ? 0 : ms));
+
+  const bezier = (a, b, c, t, out) =>
+    out.set(
+      (1 - t) ** 2 * a.x + 2 * (1 - t) * t * b.x + t * t * c.x,
+      (1 - t) ** 2 * a.y + 2 * (1 - t) * t * b.y + t * t * c.y,
+      (1 - t) ** 2 * a.z + 2 * (1 - t) * t * b.z + t * t * c.z,
+    );
+
+  // mouth: yuvanın önü, seat: kartuşun oturduğu yer, flat: yatay duruşu
+  function slotPoints() {
+    return {
+      mouth: body.localToWorld(vec3(SLOT.x, SLOT.y, FRONT_Z + CART.l / 2 + 0.16)),
+      seat: body.localToWorld(vec3(SLOT.x, SLOT.y, FRONT_Z - CART.l / 2 + CART.out)),
+      flat: root.quaternion
+        .clone()
+        .multiply(new THREE.Quaternion().setFromAxisAngle(vec3(1, 0, 0), -Math.PI / 2)),
+    };
+  }
+
+  // Kartuş kavis çizerek yuvanın önüne uçar, kısa bir duraksayıp içeri girer,
+  // ekran parlar ve projenin açılış ekranı gelir.
+  async function insertCart(index) {
+    const project = projects[index];
+    const cart = carts[index];
+    const { group } = cart;
+    cart.flying = true;
+    cart.label.material.color.setScalar(1);
+    setHover(null);
+    setMood('look');
+
+    const start = group.position.clone();
+    const startQuaternion = group.quaternion.clone();
+    const startScale = group.scale.x;
+    const { mouth, seat, flat } = slotPoints();
+    const peak = start.clone().lerp(mouth, 0.5).add(vec3(0, 0.45, 0));
+
+    await tween(860, EASE.inOut, (t) => {
+      bezier(start, peak, mouth, t, group.position);
+      group.quaternion.slerpQuaternions(startQuaternion, flat, t);
+      group.scale.setScalar(startScale + (1 - startScale) * t);
+    });
+    await wait(80);
+    await tween(340, EASE.inOut, (t) => group.position.lerpVectors(mouth, seat, t));
+
+    clearTimeout(moodTimer);
+    Object.assign(face, {
+      mode: 'boot',
+      mood: 'idle',
+      app: project,
+      icon: icons[index],
+      pop: 0,
+      chars: 0,
+      flash: 1,
+      dirty: true,
+    });
+    await tween(160, EASE.linear, (t) => {
+      face.flash = 1 - t;
+      face.dirty = true;
+    });
+
+    const name = project.shortName ?? project.name;
+    await Promise.all([
+      tween(340, EASE.out, (t) => {
+        face.pop = t;
+        face.dirty = true;
+      }),
+      tween(name.length * 55, EASE.linear, (t) => {
+        face.chars = Math.round(t * name.length);
+        face.dirty = true;
+      }),
+    ]);
+    await wait(260);
+  }
+
+  async function ejectCart(index) {
+    const cart = carts[index];
+    const { group } = cart;
+    Object.assign(face, { mode: 'face', app: null, icon: null, dirty: true });
+    setMood('happy', 900);
+
+    const { mouth } = slotPoints();
+    const seated = group.position.clone();
+    await tween(300, EASE.out, (t) => group.position.lerpVectors(seated, mouth, t));
+
+    const home = cart.rest.position;
+    const peak = mouth.clone().lerp(home, 0.5).add(vec3(0, 0.45, 0));
+    const startQuaternion = group.quaternion.clone();
+    await tween(760, EASE.inOut, (t) => {
+      bezier(mouth, peak, home, t, group.position);
+      group.quaternion.slerpQuaternions(startQuaternion, cart.rest.tilt, t);
+      group.scale.setScalar(1 + (cart.rest.scale - 1) * t);
+    });
+    cart.hover = 0;
+    cart.flying = false;
+  }
+
+  // Yatay ekranda BMO'nun iki yanında sütun, dikey ekranda üstte sıra.
+  // Beş kartuşta Adar'ın dizilimine denk gelir, sayı değişince kendini ayarlar.
+  function columnSlots(size, box) {
+    const count = carts.length;
+    const midY = (box.minY + box.maxY) / 2;
+    const leftCount = Math.ceil(count / 2);
+    const column = (n, edgeX, direction, turn) =>
+      Array.from({ length: n }, (_, i) => {
+        const step = n === 2 ? 1.15 : 0.95;
+        const bulge = i % 2 ? (n === 2 ? 0.3 : 0.95) : 0;
+        return {
+          x: edgeX + direction * bulge * size,
+          y: midY + (i - (n - 1) / 2) * step * size,
+          turn,
+        };
+      });
+    return [
+      ...column(leftCount, box.minX - size * 0.55, -1, 0.2),
+      ...column(count - leftCount, box.maxX + size * 0.55, 1, -0.2),
+    ];
+  }
+
+  function rowSlots(size, box, w) {
+    const count = carts.length;
+    const y = Math.max(size * 0.55, box.minY / 2);
+    const gap = Math.min(size * 0.72, (w * 0.92 - size * 0.78) / Math.max(1, count - 1));
+    return carts.map((_, i) => {
+      const offset = i - (count - 1) / 2;
+      return {
+        x: w / 2 + offset * gap,
+        y: y + Math.abs(offset) * size * 0.06,
+        roll: -offset * 0.08,
+        turn: 0,
+        back: Math.abs(offset) * 0.05,
+      };
+    });
+  }
+
+  const layoutCamera = new THREE.PerspectiveCamera(FOV, 1, 0.05, 60);
+  const layoutHelper = new THREE.Object3D();
+
+  // Yerleşim piksel olarak hesaplanır, sonra kameradan aynı derinliğe geri
+  // yansıtılır. Böylece kartuşlar her ekranda aynı boyda görünür.
+  function layoutCarts(w, h, distance) {
+    if (!carts.length || disKartusYerlesimi) return;
+    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+    layoutCamera.aspect = w / h;
+    layoutCamera.position.copy(homePosition);
+    layoutCamera.lookAt(target);
+    layoutCamera.updateProjectionMatrix();
+    layoutCamera.updateMatrixWorld(true);
+
+    const points = bodyCorners.map((corner) => {
+      const p = corner.clone().project(layoutCamera);
+      return { x: ((p.x + 1) / 2) * w, y: ((1 - p.y) / 2) * h };
+    });
+    const box = {
+      minX: Math.min(...points.map((p) => p.x)),
+      maxX: Math.max(...points.map((p) => p.x)),
+      minY: Math.min(...points.map((p) => p.y)),
+      maxY: Math.max(...points.map((p) => p.y)),
+    };
+
+    const crowding = Math.min(1, 6 / carts.length);
+    const portrait = w / h < 0.95;
+    const size = portrait
+      ? clamp(Math.min(box.minY * 0.8, w * 0.32), 70, 150) * crowding
+      : clamp((box.maxY - box.minY) * 0.5, 90, 170) * crowding;
+    const slots = portrait ? rowSlots(size, box, w) : columnSlots(size, box);
+
+    const tanHalfFov = Math.tan(THREE.MathUtils.degToRad(FOV / 2));
+    const viewAxis = target.clone().sub(layoutCamera.position).normalize();
+    const axisY = vec3(0, 1, 0);
+    const axisZ = vec3(0, 0, 1);
+
+    carts.forEach((cart, i) => {
+      const slot = slots[i];
+      const x = clamp(slot.x, size * 0.45, w - size * 0.45);
+      const y = clamp(slot.y, size * 0.55, h - size * 0.55);
+      const depth = distance * 0.8 + (slot.back ?? 0);
+      const ray = vec3((x / w) * 2 - 1, -(y / h) * 2 + 1, 0.5)
+        .unproject(layoutCamera)
+        .sub(layoutCamera.position)
+        .normalize();
+
+      cart.rest.position.copy(layoutCamera.position).addScaledVector(ray, depth / ray.dot(viewAxis));
+      cart.rest.scale = (size * ((2 * depth * tanHalfFov) / h)) / CART.l;
+
+      layoutHelper.position.copy(cart.rest.position);
+      layoutHelper.lookAt(layoutCamera.position);
+      cart.rest.face.copy(layoutHelper.quaternion);
+      cart.rest.tilt
+        .copy(layoutHelper.quaternion)
+        .multiply(new THREE.Quaternion().setFromAxisAngle(axisY, slot.turn))
+        .multiply(new THREE.Quaternion().setFromAxisAngle(axisZ, slot.roll ?? 0));
+    });
   }
 
   // ------------------------------------------------------------- tween
@@ -643,8 +1063,9 @@ export function createBmo(canvas, { onButton, evUzaklik = 1, evKaydirma = { x: 0
     const gorunenBoy = 2 * distance * Math.tan(THREE.MathUtils.degToRad(FOV / 2));
     homeTarget
       .copy(target)
-      .add(vec3(kaydirma.x * gorunenBoy * camera.aspect, kaydirma.y * gorunenBoy, 0));
+      .add(vec3(evKaydirma.x * gorunenBoy * camera.aspect, evKaydirma.y * gorunenBoy, 0));
     homePosition.copy(homeTarget).addScaledVector(viewDirection, distance);
+    layoutCarts(w, h, distance);
     applyZoom();
     camera.updateProjectionMatrix();
     // Duraklatılmışken yeniden boyutlanırsa görüntü bozuk kalmasın
@@ -653,7 +1074,8 @@ export function createBmo(canvas, { onButton, evUzaklik = 1, evKaydirma = { x: 0
 
   // ------------------------------------------------------------- etkileşim
   const raycaster = new THREE.Raycaster();
-  const clickable = [...buttons, screen];
+  const clickable = [...buttons, screen, ...cartMeshes];
+  const cartOf = (mesh) => (mesh && mesh.userData.cart !== undefined ? mesh.userData.cart : null);
   const pointer = { x: 0, y: 0 };
   let pressed = null;
 
@@ -666,7 +1088,9 @@ export function createBmo(canvas, { onButton, evUzaklik = 1, evKaydirma = { x: 0
       ),
       camera,
     );
-    return raycaster.intersectObjects(clickable, false)[0]?.object ?? null;
+    const hit = raycaster.intersectObjects(clickable, false)[0]?.object ?? null;
+    const cart = cartOf(hit);
+    return cart !== null && carts[cart].flying ? null : hit;
   }
 
   function press(mesh, down) {
@@ -681,18 +1105,22 @@ export function createBmo(canvas, { onButton, evUzaklik = 1, evKaydirma = { x: 0
   function onPointerDown(event) {
     if (zoom.progress > 0) return;
     const mesh = pick(event);
-    if (mesh) {
-      pressed = mesh;
-      press(mesh, true);
-    }
+    if (!mesh) return;
+    pressed = mesh;
+    if (cartOf(mesh) === null) press(mesh, true);
   }
 
   function onPointerUp(event) {
     if (!pressed) return;
     const mesh = pressed;
     pressed = null;
+    const cart = cartOf(mesh);
+    if (cart !== null) {
+      if (cartOf(pick(event)) === cart) onPick?.(cart);
+      return;
+    }
     press(mesh, false);
-    if (pick(event) !== mesh) return;
+    if (pick(event) !== mesh || face.mode !== 'face') return;
     const name = mesh.userData.button;
     const startled = name === 'screen' || name === 'b' || name === 'triangle';
     setMood(startled ? 'surprised' : 'happy', startled ? 900 : 1000);
@@ -703,11 +1131,20 @@ export function createBmo(canvas, { onButton, evUzaklik = 1, evKaydirma = { x: 0
   function onPointerMove(event) {
     pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
     pointer.y = (event.clientY / window.innerHeight) * 2 - 1;
-    if (event.target === canvas) {
-      canvas.style.cursor = zoom.progress === 0 && pick(event) ? 'pointer' : '';
+    if (zoom.progress > 0 || event.target !== canvas) {
+      if (event.pointerType === 'mouse') setHover(null);
+      return;
     }
+    const hit = pick(event);
+    canvas.style.cursor = hit ? 'pointer' : '';
+    if (event.pointerType === 'mouse') setHover(cartOf(hit));
   }
 
+  function onPointerLeave() {
+    setHover(null);
+  }
+
+  canvas.addEventListener('pointerleave', onPointerLeave);
   canvas.addEventListener('pointerdown', onPointerDown);
   window.addEventListener('pointerup', onPointerUp);
   window.addEventListener('pointermove', onPointerMove, { passive: true });
@@ -739,7 +1176,7 @@ export function createBmo(canvas, { onButton, evUzaklik = 1, evKaydirma = { x: 0
       if (blinkStart >= 0) {
         const p = (now - blinkStart) / 170;
         face.blink = p < 0.5 ? p * 2 : Math.max(0, 2 - p * 2);
-        face.dirty = true;
+        if (face.mode === 'face') face.dirty = true;
         if (p >= 1) {
           blinkStart = -1;
           face.blink = 0;
@@ -751,7 +1188,9 @@ export function createBmo(canvas, { onButton, evUzaklik = 1, evKaydirma = { x: 0
       const k = Math.min(1, dt * 6);
       const x = face.look.x + (pointer.x - face.look.x) * k;
       const y = face.look.y + (pointer.y - face.look.y) * k;
-      if (Math.abs(x - face.look.x) + Math.abs(y - face.look.y) > 0.002) face.dirty = true;
+      if (Math.abs(x - face.look.x) + Math.abs(y - face.look.y) > 0.002 && face.mode === 'face') {
+        face.dirty = true;
+      }
       face.look.x = x;
       face.look.y = y;
 
@@ -760,10 +1199,27 @@ export function createBmo(canvas, { onButton, evUzaklik = 1, evKaydirma = { x: 0
       const talking = level !== null;
       const goal = level ?? 0;
       const talk = face.talk + (goal - face.talk) * Math.min(1, dt * (goal > face.talk ? 30 : 15));
-      if (talking !== face.talking || Math.abs(talk - face.talk) > 0.005) face.dirty = true;
+      if ((talking !== face.talking || Math.abs(talk - face.talk) > 0.005) && face.mode === 'face') {
+        face.dirty = true;
+      }
       face.talking = talking;
       face.talk = talk < 0.005 ? 0 : talk;
     }
+
+    // Beklerken süzülme, üstüne gelince kalkıp izleyiciye dönme
+    const time = now / 1000;
+    carts.forEach((cart, i) => {
+      if (cart.flying) return;
+      const active = i === hovered || i === highlighted ? 1 : 0;
+      cart.hover += (active - cart.hover) * Math.min(1, dt * 10);
+      const bob = reducedMotion ? 0 : Math.sin(time * 1.3 + cart.seed) * 0.022;
+      cart.group.position.copy(cart.rest.position);
+      cart.group.position.y += bob + cart.hover * 0.07;
+      cart.group.quaternion.slerpQuaternions(cart.rest.tilt, cart.rest.face, cart.hover * 0.7);
+      if (!reducedMotion) cart.group.rotateY(Math.sin(time * 0.8 + cart.seed) * 0.04 * (1 - cart.hover));
+      cart.group.scale.setScalar(cart.rest.scale * (1 + cart.hover * 0.07));
+      cart.label.material.color.setScalar(1 + cart.hover * 0.18);
+    });
 
     if (face.dirty) drawFace();
     if (!paused) renderer.render(scene, camera);
@@ -781,6 +1237,10 @@ export function createBmo(canvas, { onButton, evUzaklik = 1, evKaydirma = { x: 0
     scene,
     camera,
     renderer,
+    // Kartuşların yerini dışarıdan belirleyebilmek için (defterin sayfasına
+    // oturtuluyorlar). rest.position/tilt/face/scale yazılır, çizim döngüsü
+    // her karede buradan okur.
+    carts,
     setMood,
     // 0-1 arası ses seviyesi konuşturur, null ağzı kapatır. Sitede bu değer
     // çalan sesin genliğinden geliyor.
@@ -805,10 +1265,17 @@ export function createBmo(canvas, { onButton, evUzaklik = 1, evKaydirma = { x: 0
     setPaused(value) {
       paused = value;
     },
+    insert: insertCart,
+    eject: ejectCart,
+    // Klavyeyle seçilen kartuşu öne çıkarır, null kaldırır.
+    setHighlight(index) {
+      highlighted = index;
+    },
     dispose() {
       cancelAnimationFrame(frame);
       clearTimeout(moodTimer);
       observer.disconnect();
+      canvas.removeEventListener('pointerleave', onPointerLeave);
       canvas.removeEventListener('pointerdown', onPointerDown);
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('pointermove', onPointerMove);

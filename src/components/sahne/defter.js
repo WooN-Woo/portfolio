@@ -217,7 +217,7 @@ export function createDefter({ scene, renderer, projeler }) {
     };
   });
 
-  /** Sol sayfa: varsa projenin görseli, yoksa karalama. */
+  /** Sol sayfa: kartuşun durduğu yer. Kartuşun kendisi 3B, sayfanın önünde. */
   function solCiz(acilim) {
     const { ctx } = acilim.sol;
     const { proje } = acilim;
@@ -225,50 +225,34 @@ export function createDefter({ scene, renderer, projeler }) {
     kagitZemin(ctx, 'sol');
 
     const kenar = 72;
-    const cerceve = { x: kenar, y: 162, en: DOKU.en - kenar * 2, boy: DOKU.boy - 430 };
+    const yuva = { x: kenar + 40, y: 190, en: DOKU.en - kenar * 2 - 80, boy: DOKU.boy - 480 };
 
     ctx.textBaseline = 'top';
     ctx.fillStyle = RENK.soluk;
     ctx.font = `400 30px ${el}`;
-    ctx.fillText(acilim.resim ? 'ekran görüntüsü' : 'karalama defteri', kenar, 96);
+    ctx.fillText('kartuşu BMO\u2019ya tak', kenar, 96);
 
-    // bantla yapıştırılmış fotoğraf hissi
+    // kartuşun oturduğu yuva: elle çizilmiş kesik çerçeve
     ctx.save();
-    ctx.shadowColor = 'rgba(90, 70, 35, 0.28)';
-    ctx.shadowBlur = 14;
-    ctx.shadowOffsetY = 6;
-    ctx.fillStyle = '#fffdf6';
-    ctx.fillRect(cerceve.x - 12, cerceve.y - 12, cerceve.en + 24, cerceve.boy + 24);
+    ctx.strokeStyle = RENK.kalem;
+    ctx.lineWidth = 4;
+    ctx.setLineDash([14, 12]);
+    ctx.strokeRect(yuva.x, yuva.y, yuva.en, yuva.boy);
     ctx.restore();
 
-    ctx.fillStyle = RENK.kagitKoyu;
-    ctx.fillRect(cerceve.x, cerceve.y, cerceve.en, cerceve.boy);
+    // yuvanın altında kartuşun gölgesi için hafif leke
+    const leke = ctx.createRadialGradient(
+      yuva.x + yuva.en / 2, yuva.y + yuva.boy, 10,
+      yuva.x + yuva.en / 2, yuva.y + yuva.boy, yuva.en * 0.55,
+    );
+    leke.addColorStop(0, 'rgba(120, 95, 50, 0.22)');
+    leke.addColorStop(1, 'rgba(120, 95, 50, 0)');
+    ctx.fillStyle = leke;
+    ctx.fillRect(yuva.x - 40, yuva.y + yuva.boy - 60, yuva.en + 80, 120);
 
-    if (acilim.resim) {
-      const resim = acilim.resim;
-      const oran = Math.max(cerceve.en / resim.width, cerceve.boy / resim.height);
-      const en = resim.width * oran;
-      const boy = resim.height * oran;
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(cerceve.x, cerceve.y, cerceve.en, cerceve.boy);
-      ctx.clip();
-      ctx.drawImage(
-        resim,
-        cerceve.x + (cerceve.en - en) / 2,
-        cerceve.y + (cerceve.boy - boy) / 2,
-        en,
-        boy,
-      );
-      ctx.restore();
-    } else {
-      karalama(ctx, cerceve);
-    }
-
-    // etiketler
     ctx.fillStyle = RENK.murekkep;
     ctx.font = `400 30px ${el}`;
-    let y = cerceve.y + cerceve.boy + 46;
+    let y = yuva.y + yuva.boy + 54;
     for (const etiket of (proje.etiketler ?? []).slice(0, 4)) {
       if (y > DOKU.boy - 70) break;
       ctx.fillText(`— ${etiket}`, kenar, y);
@@ -335,18 +319,7 @@ export function createDefter({ scene, renderer, projeler }) {
     document.fonts.ready.then(hepsiniCiz);
   }
 
-  // Görseller yüklendikçe o sayfa yenilenir
-  for (const acilim of acilimlar) {
-    if (!acilim.proje.gorsel) continue;
-    const resim = new Image();
-    resim.onload = () => {
-      acilim.resim = resim;
-      solCiz(acilim);
-    };
-    resim.src = acilim.proje.gorsel;
-  }
-
-  /** Düz sayfa yüzeyi. kenar = -1 sol sayfa, +1 sağ sayfa. */
+  /** Hareketsiz sayfa yüzeyi. kenar = -1 sol sayfa, +1 sağ sayfa. */
   function sayfaYuzeyi(kenar, doku) {
     const geo = new THREE.PlaneGeometry(SAYFA.en, SAYFA.boy);
     geo.translate((kenar * SAYFA.en) / 2, 0, 0);
@@ -364,18 +337,63 @@ export function createDefter({ scene, renderer, projeler }) {
   sagSayfa.position.z = 0.001;
   kitap.add(sagSayfa);
 
-  // Çevrilen sayfa: iki yüzü iki ayrı düzlem, sırt sırta
-  const ceviren = new THREE.Group();
-  ceviren.position.z = 0.004;
-  kitap.add(ceviren);
+  // --- çevrilen sayfa
+  // Düz bir düzlemi döndürmek tahta gibi duruyordu; onun yerine sayfa
+  // cilt payından ucuna doğru bükülüyor: uç kısım geride kalıp hafifçe
+  // kabarıyor, gerçek bir sayfa gibi.
+  const BOLME = 28;
+  /** Sayfanın ne kadar kıvrılacağı (radyan). */
+  const BUKUM = 0.55;
 
-  const cevirenOn = sayfaYuzeyi(1, acilimlar[0].sagDoku);
-  ceviren.add(cevirenOn);
+  function cevrilenGeometri(aynaUv) {
+    const geo = new THREE.PlaneGeometry(SAYFA.en, SAYFA.boy, BOLME, 1);
+    geo.translate(SAYFA.en / 2, 0, 0);
+    if (aynaUv) {
+      const uv = geo.attributes.uv;
+      for (let i = 0; i < uv.count; i += 1) uv.setX(i, 1 - uv.getX(i));
+      uv.needsUpdate = true;
+    }
+    geo.userData.taban = Float32Array.from(geo.attributes.position.array);
+    return geo;
+  }
 
-  const cevirenArka = sayfaYuzeyi(1, acilimlar[0].solDoku);
-  cevirenArka.rotation.y = Math.PI;
-  cevirenArka.position.z = -0.002;
-  ceviren.add(cevirenArka);
+  function bukumUygula(geo, aci) {
+    const konum = geo.attributes.position;
+    const taban = geo.userData.taban;
+    for (let i = 0; i < konum.count; i += 1) {
+      const uzaklik = taban[i * 3];
+      const oran = uzaklik / SAYFA.en;
+      const yon = aci + BUKUM * Math.sin(Math.PI * oran) * Math.sin(aci);
+      konum.setX(i, uzaklik * Math.cos(yon));
+      konum.setZ(i, uzaklik * Math.sin(yon));
+    }
+    konum.needsUpdate = true;
+    geo.computeBoundingSphere();
+  }
+
+  const onGeo = cevrilenGeometri(false);
+  const arkaGeo = cevrilenGeometri(true);
+
+  const cevirenOn = new THREE.Mesh(
+    onGeo,
+    new THREE.MeshBasicMaterial({
+      map: acilimlar[0].sagDoku,
+      toneMapped: false,
+      side: THREE.FrontSide,
+    }),
+  );
+  const cevirenArka = new THREE.Mesh(
+    arkaGeo,
+    new THREE.MeshBasicMaterial({
+      map: acilimlar[0].solDoku,
+      toneMapped: false,
+      side: THREE.BackSide,
+    }),
+  );
+  cevirenOn.position.z = 0.004;
+  cevirenArka.position.z = 0.004;
+  kitap.add(cevirenOn);
+  kitap.add(cevirenArka);
 
   for (const parca of [solSayfa, sagSayfa, cevirenOn, cevirenArka]) {
     parca.renderOrder = 2;
@@ -398,23 +416,39 @@ export function createDefter({ scene, renderer, projeler }) {
     const indeks = Math.min(toplam - 2, Math.floor(nokta));
     const pay = nokta - indeks;
 
+    // Dokuyu değiştirirken malzemeye needsUpdate verilmiyor: aynı türde bir
+    // doku takıldığı için gölgelendirici yeniden derlenmiyor, takılma olmuyor.
     if (indeks !== sonIndeks) {
       sonIndeks = indeks;
       solSayfa.material.map = acilimlar[indeks].solDoku;
       sagSayfa.material.map = acilimlar[indeks + 1].sagDoku;
       cevirenOn.material.map = acilimlar[indeks].sagDoku;
       cevirenArka.material.map = acilimlar[indeks + 1].solDoku;
-      for (const parca of [solSayfa, sagSayfa, cevirenOn, cevirenArka]) {
-        parca.material.needsUpdate = true;
-      }
     }
 
-    ceviren.rotation.y = -Math.PI * pay;
-    // çevrilirken sayfa hafifçe kabarsın
-    ceviren.position.z = 0.004 + Math.sin(Math.PI * pay) * 0.06;
+    const aci = Math.PI * pay;
+    bukumUygula(onGeo, aci);
+    bukumUygula(arkaGeo, aci);
   }
 
   setIlerleme(0);
+
+  /**
+   * Sol sayfadaki kartuş yuvasının dünya koordinatındaki yeri.
+   * Kartuşlar BMO'nun çekirdeğinde sahneye doğrudan ekleniyor, bu yüzden
+   * yerleri yerel değil dünya uzayında veriliyor.
+   */
+  const YUVA = { x: -SAYFA.en * 0.5, y: 0.1, z: 0.05 };
+  const KARTUS_OLCEK = 1.15;
+
+  function kartusYeri() {
+    kitap.updateWorldMatrix(true, false);
+    return {
+      konum: kitap.localToWorld(new THREE.Vector3(YUVA.x, YUVA.y, YUVA.z)),
+      yon: kitap.getWorldQuaternion(new THREE.Quaternion()),
+      olcek: KARTUS_OLCEK,
+    };
+  }
 
   function dispose() {
     scene.remove(kok);
@@ -428,5 +462,5 @@ export function createDefter({ scene, renderer, projeler }) {
     });
   }
 
-  return { setIlerleme, dispose };
+  return { setIlerleme, kartusYeri, acilimSayisi: toplam, dispose };
 }
