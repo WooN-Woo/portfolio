@@ -200,11 +200,13 @@ export function createDefter({ scene, renderer, projeler, kapak }) {
   tabla.position.addScaledVector(normal, -0.125);
   sehpa.add(tabla);
 
-  // Çıta defterin önünde duran bir ray: alt ucu kaideye değiyor, üst ucu
-  // sayfanın alt kenarını birkaç milim örtüyor.
-  const cita = tahta(KITAP_EN + 0.14, 0.15, 0.06, RENK.sehpaKoyu, 0.026);
+  // Çıta defterin önünde duran bir ray. Sayfanın alt kenarını ÖRTMÜYOR:
+  // çevrilen sayfa tam o yükseklikten geçiyor, birkaç milim bindirse bile
+  // sayfa çıtanın içinden geçiyormuş gibi görünüyor. Bu yüzden üst ucu
+  // sayfanın hemen altında bitiyor, alt ucu kaideye değiyor.
+  const cita = tahta(KITAP_EN + 0.14, 0.09, 0.06, RENK.sehpaKoyu, 0.026);
   cita.rotation.x = -YATIKLIK;
-  cita.position.set(0, TABAN_Y - 0.028, TABAN_Z);
+  cita.position.set(0, TABAN_Y - 0.049, TABAN_Z);
   cita.position.addScaledVector(normal, 0.05);
   sehpa.add(cita);
 
