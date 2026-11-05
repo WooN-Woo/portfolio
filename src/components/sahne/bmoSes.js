@@ -602,7 +602,12 @@ export function createBmoSound({
   // çıtırtı dokusu bir kere üretilip döngüye alınıyor, ses düğümü sayısı
   // sabit kalıyor. Dönüş hızı bu dokunun seviyesini, dönüş oranı da
   // süzgecin yerini belirliyor.
-  const TANE_YOGUNLUGU = 900; // saniyede
+  // Gerçek "sonsuz sayfa" sesinin sırrı, sayfaların sabit aralıklarla
+  // birbirine çarpması (Foley'de bisiklet tekerleğine kart tutma hilesi).
+  // Taneler tamamen rastgele yerleştirilince ses ritmini kaybedip statik
+  // gibi duyuluyor; bu yüzden eşit aralıklara oturtulup üstüne pay veriliyor.
+  const TANE_YOGUNLUGU = 260; // saniyede, normal hızda
+  const TANE_PAYI = 0.42; // aralığın bu kadarı rastgele oynuyor
   let citirtiTamponu = null;
   let sayfaKaynak = null;
   let sayfaKazanc = null;
@@ -616,8 +621,13 @@ export function createBmoSound({
     const veri = tampon.getChannelData(0);
     const adet = Math.floor(sure * TANE_YOGUNLUGU);
 
+    const aralik = uzunluk / adet;
     for (let i = 0; i < adet; i += 1) {
-      const nerede = Math.floor(Math.random() * (uzunluk - 400));
+      const kayma = (Math.random() - 0.5) * 2 * TANE_PAYI * aralik;
+      const nerede = Math.min(
+        uzunluk - 400,
+        Math.max(0, Math.floor(i * aralik + kayma)),
+      );
       const boy = Math.floor(ctx.sampleRate * (0.0015 + Math.random() * 0.0035));
       // genliklerin çoğu küçük, azı büyük: ölçülen tepe/ortalama oranı böyle çıkıyor
       const genlik = Math.random() ** 3;
@@ -666,6 +676,12 @@ export function createBmoSound({
   const sayfaAkisi = whenAudible((hiz, oran) => {
     sayfaZinciri();
     const now = ctx.currentTime;
+    const yogunluk = Math.min(1, hiz * 1.2);
+
+    // Hız yalnızca sesi yükseltmiyor, dokuyu da hızlandırıyor: sayfalar
+    // sıklaşıyor ve tınısı tizleşiyor — tekerleği hızlandırmak gibi.
+    sayfaKaynak.playbackRate.setTargetAtTime(0.6 + yogunluk * 1.25, now, 0.05);
+
     const hedef = Math.min(0.05, hiz * 0.13);
     sayfaKazanc.gain.cancelScheduledValues(now);
     sayfaKazanc.gain.setTargetAtTime(hedef, now, 0.025);
