@@ -590,30 +590,73 @@ export function createBmoSound({
   // sıklaşıyor, ses de doğal olarak gürleşiyor.
   // Defterin sesleri (orijinalde defter yok).
   //
-  // Elimizdeki kâğıt sesi ölçüldü ve yapısı şu çıktı:
-  //   ~440 ms sürüyor; 350 ms boyunca düzensiz çıtırtı birikiyor,
-  //   sonra tek keskin tepe geliyor, 80 ms'de sönüyor
+  // Elimizdeki kâğıt sesi ölçüldü:
+  //   ~440 ms; 350 ms çıtırtı birikiyor, sonra tek keskin tepe, 80 ms sönüm
   //   çıtırtılar tepeden 13–28 dB aşağıda, aralarında 15 dB oynuyor
-  //   enerjinin %96'sı 900–4000 Hz arasında, altı ve üstü boş
+  //   enerjinin %96'sı 900–4000 Hz arasında
   //   tepe/ortalama oranı 12 — ses düz değil, tane tane
   //
-  // Bu yüzden sabit dosya yerine sentez: çıtırtı akışı sayfanın dönüş
-  // hızını takip ediyor, doruk vuruşu da sayfa karşı yaprağa değdiği an
-  // geliyor. Sayfa arada kalırsa ses de orada asılı kalıyor.
-  let sonTane = 0;
+  // Çıtırtıları tek tek ses düğümü olarak üretmek olmuyor: gerçek kâğıtta
+  // saniyede yüzlerce tane var, kulak onları ayırt etmiyor. Seyrek üretince
+  // böcek adımı gibi duyuluyor, düz gürültü kullanınca kum gibi. Çözüm:
+  // çıtırtı dokusu bir kere üretilip döngüye alınıyor, ses düğümü sayısı
+  // sabit kalıyor. Dönüş hızı bu dokunun seviyesini, dönüş oranı da
+  // süzgecin yerini belirliyor.
+  const TANE_YOGUNLUGU = 900; // saniyede
+  let citirtiTamponu = null;
+  let sayfaKaynak = null;
+  let sayfaKazanc = null;
+  let sayfaBant = null;
 
-  /** Tek çıtırtı: kısa, dar bantlı, referansın bandında. */
-  function tane(at, siddet) {
-    hiss({
-      at,
-      freq: 950 + Math.random() * 2900,
-      q: 4 + Math.random() * 6,
-      dur: 0.003 + Math.random() * 0.007,
-      vol: siddet * (0.5 + Math.random()),
-      attack: 0.0007,
-      pan: (Math.random() - 0.5) * 0.4,
-      wet: 0,
-    });
+  function citirtiUret() {
+    if (citirtiTamponu) return citirtiTamponu;
+    const sure = 2;
+    const uzunluk = Math.floor(ctx.sampleRate * sure);
+    const tampon = ctx.createBuffer(1, uzunluk, ctx.sampleRate);
+    const veri = tampon.getChannelData(0);
+    const adet = Math.floor(sure * TANE_YOGUNLUGU);
+
+    for (let i = 0; i < adet; i += 1) {
+      const nerede = Math.floor(Math.random() * (uzunluk - 400));
+      const boy = Math.floor(ctx.sampleRate * (0.0015 + Math.random() * 0.0035));
+      // genliklerin çoğu küçük, azı büyük: ölçülen tepe/ortalama oranı böyle çıkıyor
+      const genlik = Math.random() ** 3;
+      for (let j = 0; j < boy; j += 1) {
+        veri[nerede + j] += (Math.random() * 2 - 1) * genlik * Math.exp((-4 * j) / boy);
+      }
+    }
+
+    let enBuyuk = 0;
+    for (const v of veri) enBuyuk = Math.max(enBuyuk, Math.abs(v));
+    if (enBuyuk > 0) for (let i = 0; i < uzunluk; i += 1) veri[i] /= enBuyuk;
+
+    citirtiTamponu = tampon;
+    return tampon;
+  }
+
+  function sayfaZinciri() {
+    if (sayfaKaynak) return;
+    sayfaKaynak = ctx.createBufferSource();
+    sayfaKaynak.buffer = citirtiUret();
+    sayfaKaynak.loop = true;
+
+    sayfaBant = ctx.createBiquadFilter();
+    sayfaBant.type = 'bandpass';
+    sayfaBant.Q.value = 0.9;
+    sayfaBant.frequency.value = 2000;
+
+    sayfaKazanc = ctx.createGain();
+    sayfaKazanc.gain.value = 0;
+
+    const panner = ctx.createStereoPanner();
+    panner.connect(effects);
+    const send = ctx.createGain();
+    send.gain.value = 0.06;
+    panner.connect(send);
+    send.connect(reverbSend);
+
+    sayfaKaynak.connect(sayfaBant).connect(sayfaKazanc).connect(panner);
+    sayfaKaynak.start(ctx.currentTime, Math.random() * 1.5);
   }
 
   /**
@@ -621,45 +664,43 @@ export function createBmoSound({
    * oran: sayfanın ne kadar döndüğü (0 kapalı, 1 tam dönmüş).
    */
   const sayfaAkisi = whenAudible((hiz, oran) => {
-    const yogunluk = Math.min(1, hiz * 1.3);
-    if (yogunluk < 0.04) return;
-
+    sayfaZinciri();
     const now = ctx.currentTime;
-    // Hızlandıkça çıtırtılar sıklaşıyor; gürlük kazançtan değil sıklıktan
-    const aralik = 0.005 + (1 - yogunluk) * 0.05;
-    const siddet = 0.012 + yogunluk * 0.012;
-    let t = Math.max(now + 0.004, sonTane);
-    let adet = 0;
-    while (t < now + 0.1 && adet < 10) {
-      tane(t - now, siddet);
-      t += aralik * (0.4 + Math.random() * 1.2);
-      adet += 1;
-    }
-    sonTane = t;
+    const hedef = Math.min(0.05, hiz * 0.13);
+    sayfaKazanc.gain.cancelScheduledValues(now);
+    sayfaKazanc.gain.setTargetAtTime(hedef, now, 0.025);
+    // Yeni bir hareket gelmezse kendiliğinden sussun
+    sayfaKazanc.gain.setTargetAtTime(0, now + 0.09, 0.06);
+    sayfaBant.frequency.setTargetAtTime(1400 + Math.sin(Math.PI * oran) * 1500, now, 0.05);
   });
 
   function sayfaSustur() {
-    sonTane = 0;
+    if (!sayfaKazanc || !ctx) return;
+    const now = ctx.currentTime;
+    sayfaKazanc.gain.cancelScheduledValues(now);
+    sayfaKazanc.gain.setTargetAtTime(0, now, 0.04);
   }
 
   /**
    * Sayfa karşı yaprağa değdiği an: referanstaki doruk vuruşu ve ardından
-   * 80 ms'de sönen çıtırtı kuyruğu. Kapakta üstüne tok bir vuruş biniyor.
+   * hızla sönen çıtırtı kuyruğu. Kapakta üstüne tok bir vuruş biniyor.
    */
   const sayfaKondu = whenAudible((agir = false) => {
     hiss({
       freq: 1500,
-      sweep: sweepBetween(1500, 2600),
-      q: 1.3,
+      sweep: sweepBetween(1500, 2500),
+      q: 1.2,
       dur: 0.05,
-      vol: agir ? 0.1 : 0.075,
+      vol: agir ? 0.09 : 0.065,
       attack: 0.002,
       wet: 0.1,
     });
-    for (let i = 0; i < 7; i += 1) {
-      // kuyruk: giderek seyrekleşip sönüyor
-      tane(0.012 + i * 0.011 * (0.7 + Math.random()), 0.03 * (1 - i / 7));
-    }
+    // kuyruk: aynı çıtırtı dokusundan kısa ve sönen bir parça
+    sayfaZinciri();
+    const now = ctx.currentTime;
+    sayfaKazanc.gain.cancelScheduledValues(now);
+    sayfaKazanc.gain.setValueAtTime(0.045, now + 0.01);
+    sayfaKazanc.gain.setTargetAtTime(0, now + 0.02, 0.03);
     if (!agir) return;
     tone({
       at: 0.012,
