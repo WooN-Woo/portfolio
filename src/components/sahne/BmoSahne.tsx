@@ -27,6 +27,9 @@ const EV_KAYDIRMA = { x: 0.28, y: 0 };
 /** Bu orandan darsa dikey (telefon) düzenine geçiliyor. */
 const DIKEY_ESIK = 0.95;
 
+/** Dikeyde sayfa kadrajda biraz aşağıda dursun: altta kalan zemin azalsın. */
+const DIKEY_PAY = 0.075;
+
 const GORUS_ACISI = 30;
 const YARIM_ACI_TAN = Math.tan((GORUS_ACISI / 2) * (Math.PI / 180));
 
@@ -34,16 +37,31 @@ const YARIM_ACI_TAN = Math.tan((GORUS_ACISI / 2) * (Math.PI / 180));
  * Kameranın bir dünya noktasını kadrajın ortasına alması için gereken
  * kaydırma. Çekirdek kaydırmayı görünen alanın oranı cinsinden istiyor.
  */
-function kadrajHesapla(oran: number, uzaklik: number, hedef: { x: number; y: number }) {
+function kadrajHesapla(
+  oran: number,
+  uzaklik: number,
+  hedef: { x: number; y: number },
+  dikeyPay = 0,
+) {
   const mesafe = 4.6 * Math.max(1, 1 / oran) * uzaklik;
   const gorunenBoy = 2 * mesafe * YARIM_ACI_TAN;
   return {
     uzaklik,
     kaydirma: {
       x: hedef.x / (gorunenBoy * oran),
-      y: (hedef.y - BMO_HEDEF_Y) / gorunenBoy,
+      y: (hedef.y - BMO_HEDEF_Y) / gorunenBoy + dikeyPay,
     },
   };
+}
+
+/**
+ * Sayfalar arası geçişi keskinleştiren eğri. Kamera iki sayfa arasında düz
+ * bir hızla gezerse kaydırmanın büyük bölümünde iki sayfa da yarım kalıyor;
+ * bu eğri ara bölgeden hızlı geçip duraklarda bekliyor.
+ */
+function keskinGecis(t: number) {
+  const k = Math.min(1, Math.max(0, (t - 0.5) * 2.6 + 0.5));
+  return k * k * k * (k * (k * 6 - 15) + 10);
 }
 
 /** Dikeyde tek sayfa ekrana sığacak kadar uzaklık. */
@@ -249,7 +267,9 @@ export function BmoSahne() {
      * Kullanıcı kaydırmayı bırakıp bu süre kadar dokunmazsa en yakın durağa
      * oturuyor. Kısa olursa kullanıcı daha okurken sayfa kendiliğinden kayar.
      */
-    const HIZALAMA_BEKLEME = 2000;
+    // Telefonda ara durumda iki sayfa da yarım göründüğü için hizalama
+    // daha çabuk devreye giriyor.
+    const hizalamaBeklemesi = () => (dikeyMi() ? 700 : 2000);
     const azHareket = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let hizalamaZamani = 0;
     let sonDikey: boolean | null = null;
@@ -320,13 +340,18 @@ export function BmoSahne() {
         const sag = defter.sayfaMerkezi(1);
         const bas = adim <= 1 ? sag : sol;
         const son = adim <= 1 ? sol : sag;
-        const pay = adim <= 1 ? adim : yan;
+        const pay = keskinGecis(adim <= 1 ? adim : yan);
         const oran = ekranOrani();
         bmo.setEvKadraj(
-          kadrajHesapla(oran, dikeyUzaklik(oran), {
-            x: bas.x + (son.x - bas.x) * pay,
-            y: bas.y + (son.y - bas.y) * pay,
-          }),
+          kadrajHesapla(
+            oran,
+            dikeyUzaklik(oran),
+            {
+              x: bas.x + (son.x - bas.x) * pay,
+              y: bas.y + (son.y - bas.y) * pay,
+            },
+            DIKEY_PAY,
+          ),
         );
 
         // Kartuş yalnızca kartuş sayfası durağında (tek sayılı duraklar)
@@ -336,7 +361,7 @@ export function BmoSahne() {
       }
 
       window.clearTimeout(hizalamaZamani);
-      hizalamaZamani = window.setTimeout(hizala, HIZALAMA_BEKLEME);
+      hizalamaZamani = window.setTimeout(hizala, hizalamaBeklemesi());
     };
 
     const ekraniGoster = (icerik: Icerik) => {
