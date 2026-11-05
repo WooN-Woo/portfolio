@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Sahne } from "@/components/sahne/Sahne";
+import { BmoSahne } from "@/components/sahne/BmoSahne";
 import { Ekran } from "@/components/sahne/Ekran";
 import { Pil } from "@/components/sahne/Pil";
 import { Not } from "@/components/sahne/Not";
@@ -14,7 +14,7 @@ export default function YeniPage() {
     <>
       {/* sahne sabit durur, sayfa onun üstünde kayar */}
       <div className="sahne-sabit">
-        <Sahne />
+        <BmoSahne />
       </div>
 
       <Ekran />

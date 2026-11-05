@@ -1369,6 +1369,26 @@ a.contact-row:hover {
   inset: 0;
   z-index: 0;
 }
+.sahne {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #6b4a35;
+}
+/* elle çizilmiş masa sahnesi — ekranı her zaman doldurur */
+.sahne-resim {
+  position: absolute;
+  inset: 0;
+  background-image: url("/sahne/masa.jpg");
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+/* BMO'nun saydam tuvali; yeri BmoSahne bileşeninden piksel olarak veriliyor */
+.bmo-tuval {
+  position: absolute;
+  display: block;
+  touch-action: none;
+}
 
 .kaydirma-alani {
   height: 420vh;
