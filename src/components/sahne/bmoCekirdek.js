@@ -38,6 +38,9 @@ const DECAL_INSET_X = 0.05;
 const DECAL_INSET_Y = BODY_CORNER + 0.01;
 const DECAL_SCALE = 400 / (BODY_D - 2 * DECAL_INSET_X);
 
+/** Kameranın baktığı yükseklik — dışarıdan kadraj hesabı için. */
+export const BMO_HEDEF_Y = BODY_H * 0.45;
+
 const TURN_Y = 0.62; // BMO izleyiciye hafif yan durur
 const FOV = 30;
 const FACE_W = 640;
@@ -418,11 +421,14 @@ export async function createBmo(
     // Gölgenin düştüğü zemin. Varsayılanı geniş; boyalı bir masanın üstünde
     // ise masanın sınırlarına çekilmeli, yoksa gölge masadan sarkıyor.
     zemin = { en: 8, boy: 8, x: 0, z: 0 },
+    // Telefonda piksel oranı ve gölge çözünürlüğü kısılabilsin
+    pikselOrani = 2,
+    golgeCozunurluk = 2048,
   } = {},
 ) {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, pikselOrani));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NoToneMapping;
   renderer.shadowMap.enabled = true;
@@ -445,7 +451,7 @@ export async function createBmo(
   const sun = new THREE.DirectionalLight('#ffffff', Math.PI * 1.2);
   sun.position.set(1.79, 5.06, 2.68);
   sun.castShadow = !golgeIsigi;
-  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.mapSize.set(golgeCozunurluk, golgeCozunurluk);
   sun.shadow.camera.left = -golgeAlani;
   sun.shadow.camera.right = golgeAlani;
   sun.shadow.camera.top = golgeAlani * 0.87;
@@ -462,7 +468,7 @@ export async function createBmo(
     const golgeKaynagi = new THREE.DirectionalLight('#ffffff', 0);
     golgeKaynagi.position.set(golgeIsigi.x, golgeIsigi.y, golgeIsigi.z);
     golgeKaynagi.castShadow = true;
-    golgeKaynagi.shadow.mapSize.set(2048, 2048);
+    golgeKaynagi.shadow.mapSize.set(golgeCozunurluk, golgeCozunurluk);
     golgeKaynagi.shadow.camera.left = -golgeAlani;
     golgeKaynagi.shadow.camera.right = golgeAlani;
     golgeKaynagi.shadow.camera.top = golgeAlani * 0.87;
@@ -1087,11 +1093,8 @@ export async function createBmo(
     });
   }
 
-  function resize() {
-    const w = Math.max(1, canvas.clientWidth);
-    const h = Math.max(1, canvas.clientHeight);
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h;
+  /** Kameranın "ev" konumu. Kadraj değişince yeniden boyutlanmadan çağrılır. */
+  function evHesapla() {
     // Dar ekranda kollar taşmasın diye uzaklaşır
     const distance = 4.6 * Math.max(1, 1 / camera.aspect) * evUzaklik;
     const gorunenBoy = 2 * distance * Math.tan(THREE.MathUtils.degToRad(FOV / 2));
@@ -1099,6 +1102,15 @@ export async function createBmo(
       .copy(target)
       .add(vec3(evKaydirma.x * gorunenBoy * camera.aspect, evKaydirma.y * gorunenBoy, 0));
     homePosition.copy(homeTarget).addScaledVector(viewDirection, distance);
+    return distance;
+  }
+
+  function resize() {
+    const w = Math.max(1, canvas.clientWidth);
+    const h = Math.max(1, canvas.clientHeight);
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    const distance = evHesapla();
     layoutCarts(w, h, distance);
     applyZoom();
     camera.updateProjectionMatrix();
@@ -1293,6 +1305,14 @@ export async function createBmo(
     setZoom(progress) {
       zoom.run++;
       zoom.progress = Math.min(1, Math.max(0, progress));
+      applyZoom();
+    },
+    // Kadrajı çalışma anında değiştirir. Telefonda kamera defterin tek
+    // sayfasına odaklanıp kaydırmayla sayfalar arasında geziniyor.
+    setEvKadraj(yeni) {
+      if (yeni.uzaklik !== undefined) evUzaklik = yeni.uzaklik;
+      if (yeni.kaydirma) evKaydirma = yeni.kaydirma;
+      evHesapla();
       applyZoom();
     },
     // Ekranı HTML katmanı kapladığında boşuna çizim yapılmasın diye.

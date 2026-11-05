@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import { games, profile, projects, skills } from "@/content/site";
-import { createBmo } from "./bmoCekirdek";
-import { createDefter } from "./defter";
+import { BMO_HEDEF_Y, createBmo } from "./bmoCekirdek";
+import { SAYFA, createDefter } from "./defter";
 
 /**
  * Masa sahnesi.
@@ -20,9 +20,39 @@ import { createDefter } from "./defter";
 /** Geniş ekranda resmin altı/üstü kırpılır; kırpma masanın lehine kaysın. */
 const DIKEY_HIZA = 0.74;
 
-/** Kadraj: BMO sol köşede kalsın, defter ortaya denk gelsin. */
+/** Yatay kadraj: BMO sol köşede kalsın, defter ortaya denk gelsin. */
 const EV_UZAKLIK = 1.25;
 const EV_KAYDIRMA = { x: 0.28, y: 0 };
+
+/** Bu orandan darsa dikey (telefon) düzenine geçiliyor. */
+const DIKEY_ESIK = 0.95;
+
+const GORUS_ACISI = 30;
+const YARIM_ACI_TAN = Math.tan((GORUS_ACISI / 2) * (Math.PI / 180));
+
+/**
+ * Kameranın bir dünya noktasını kadrajın ortasına alması için gereken
+ * kaydırma. Çekirdek kaydırmayı görünen alanın oranı cinsinden istiyor.
+ */
+function kadrajHesapla(oran: number, uzaklik: number, hedef: { x: number; y: number }) {
+  const mesafe = 4.6 * Math.max(1, 1 / oran) * uzaklik;
+  const gorunenBoy = 2 * mesafe * YARIM_ACI_TAN;
+  return {
+    uzaklik,
+    kaydirma: {
+      x: hedef.x / (gorunenBoy * oran),
+      y: (hedef.y - BMO_HEDEF_Y) / gorunenBoy,
+    },
+  };
+}
+
+/** Dikeyde tek sayfa ekrana sığacak kadar uzaklık. */
+function dikeyUzaklik(oran: number) {
+  const gorunenEn = SAYFA.en * 1.16;
+  const gorunenBoy = gorunenEn / oran;
+  const mesafe = gorunenBoy / (2 * YARIM_ACI_TAN);
+  return mesafe / (4.6 * Math.max(1, 1 / oran));
+}
 
 const sinirla = (deger: number) => Math.min(1, Math.max(0, deger));
 
@@ -179,15 +209,29 @@ export function BmoSahne() {
     };
 
     /**
-     * Kaydırma durakları: her durak bir sayfa durumu (0 = kapalı defter).
-     * Kullanıcı kaydırmayı bırakıp bu kadar süre dokunmazsa en yakın durağa
-     * oturuyor. Süre kısa olursa kullanıcı daha okurken sayfa kendiliğinden
-     * kayıyor, o yüzden rahat bir pay bırakıldı.
+     * Kaydırma durakları.
+     *
+     * Yatayda bir durak bir açılım (0 = kapalı defter). Dikey telefonda iki
+     * sayfa yan yana sığmıyor, sığdırmak için uzaklaşınca da yazı okunmaz
+     * hâle geliyor: orada her açılım iki durak, kamera tek sayfaya odaklanıp
+     * kaydırmayla sayfalar arasında geziniyor.
+     *
+     * Kullanıcı kaydırmayı bırakıp bu süre kadar dokunmazsa en yakın durağa
+     * oturuyor. Kısa olursa kullanıcı daha okurken sayfa kendiliğinden kayar.
      */
     const HIZALAMA_BEKLEME = 2000;
-    const DURAK_SAYISI = SAYFALAR.length + 1;
     const azHareket = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let hizalamaZamani = 0;
+    let sonDikey: boolean | null = null;
+
+    const ekranOrani = () => window.innerWidth / window.innerHeight;
+    const dikeyMi = () => ekranOrani() < DIKEY_ESIK;
+    const durakSayisi = () =>
+      dikeyMi() ? 1 + 2 * SAYFALAR.length : SAYFALAR.length + 1;
+
+    const izYuksekligiAyarla = () => {
+      iz.style.height = `${durakSayisi() * (dikeyMi() ? 85 : 100)}vh`;
+    };
 
     const hizala = () => {
       if (durum !== "idle") return;
@@ -195,20 +239,67 @@ export function BmoSahne() {
       if (yol <= 0) return;
       const ust = iz.getBoundingClientRect().top + window.scrollY;
       const ilerleme = sinirla((window.scrollY - ust) / yol);
-      const adim = Math.round(ilerleme * (DURAK_SAYISI - 1));
-      const hedef = ust + (adim / (DURAK_SAYISI - 1)) * yol;
+      const adet = durakSayisi() - 1;
+      const adim = Math.round(ilerleme * adet);
+      const hedef = ust + (adim / adet) * yol;
       if (Math.abs(window.scrollY - hedef) < 2) return;
       window.scrollTo({ top: hedef, behavior: azHareket ? "auto" : "smooth" });
     };
 
     const guncelle = () => {
-      if (!defter) return;
+      if (!defter || !bmo) return;
       const kutu = iz.getBoundingClientRect();
       const yol = kutu.height - window.innerHeight;
       const ilerleme = yol > 0 ? sinirla(-kutu.top / yol) : 0;
-      const sayfa = defter.setIlerleme(ilerleme);
-      // Açılım 0 "hakkımda", kartuşlar ondan sonra başlıyor
-      kartuslariYerlestir(sayfa.acilim - 1, sayfa.yerlesme);
+      const dikey = dikeyMi();
+      const adim = ilerleme * (durakSayisi() - 1);
+
+      if (!dikey) {
+        if (sonDikey !== false) {
+          bmo.setEvKadraj({ uzaklik: EV_UZAKLIK, kaydirma: EV_KAYDIRMA });
+          sonDikey = false;
+        }
+        const sayfa = defter.setIlerleme(adim / (defter.durumSayisi - 1));
+        // Açılım 0 "hakkımda", kartuşlar ondan sonra başlıyor
+        kartuslariYerlestir(sayfa.acilim - 1, sayfa.yerlesme);
+      } else {
+        sonDikey = true;
+
+        // Durak dizilişi: 0 kapak, sonra her açılım için önce kartuş
+        // sayfası sonra bilgi sayfası. Defterin kendi durumu yalnızca
+        // bilgi sayfasından sonraki durakta ilerliyor.
+        let defterDurum: number;
+        let yan: number;
+        if (adim <= 1) {
+          defterDurum = adim;
+          yan = adim;
+        } else {
+          const t = adim - 1;
+          const acilim = Math.floor(t / 2);
+          const kalan = t - acilim * 2;
+          defterDurum = 1 + acilim + Math.max(0, kalan - 1);
+          yan = kalan <= 1 ? kalan : 2 - kalan;
+        }
+        defter.setIlerleme(defterDurum / (defter.durumSayisi - 1));
+
+        const sol = defter.sayfaMerkezi(-1);
+        const sag = defter.sayfaMerkezi(1);
+        const bas = adim <= 1 ? sag : sol;
+        const son = adim <= 1 ? sol : sag;
+        const pay = adim <= 1 ? adim : yan;
+        const oran = ekranOrani();
+        bmo.setEvKadraj(
+          kadrajHesapla(oran, dikeyUzaklik(oran), {
+            x: bas.x + (son.x - bas.x) * pay,
+            y: bas.y + (son.y - bas.y) * pay,
+          }),
+        );
+
+        // Kartuş yalnızca kartuş sayfası durağında (tek sayılı duraklar)
+        const solDurak = Math.max(1, 1 + 2 * Math.round((adim - 1) / 2));
+        const yerlesme = 1 - Math.min(1, Math.abs(adim - solDurak) / 0.3);
+        kartuslariYerlestir((solDurak - 1) / 2 - 1, yerlesme);
+      }
 
       window.clearTimeout(hizalamaZamani);
       hizalamaZamani = window.setTimeout(hizala, HIZALAMA_BEKLEME);
@@ -277,8 +368,16 @@ export function BmoSahne() {
       if (olay.key.toLowerCase() === "a") projeyeGit();
     };
 
+    const mobil =
+      window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 820;
+
+    izYuksekligiAyarla();
+
     (async () => {
       const kurulan = await createBmo(tuval, {
+        // Telefonda piksel oranı ve gölge çözünürlüğü kısılıyor
+        pikselOrani: mobil ? 1.75 : 2,
+        golgeCozunurluk: mobil ? 1024 : 2048,
         evUzaklik: EV_UZAKLIK,
         evKaydirma: EV_KAYDIRMA,
         disKartusYerlesimi: true,
@@ -314,7 +413,11 @@ export function BmoSahne() {
     })();
 
     window.addEventListener("scroll", guncelle, { passive: true });
-    window.addEventListener("resize", guncelle);
+    const yenidenBoyutla = () => {
+      izYuksekligiAyarla();
+      guncelle();
+    };
+    window.addEventListener("resize", yenidenBoyutla);
     window.addEventListener("keydown", tusa);
     const geriDugme = geriRef.current;
     const gitDugme = gitRef.current;
@@ -324,7 +427,7 @@ export function BmoSahne() {
     return () => {
       birakildi = true;
       window.removeEventListener("scroll", guncelle);
-      window.removeEventListener("resize", guncelle);
+      window.removeEventListener("resize", yenidenBoyutla);
       window.removeEventListener("keydown", tusa);
       window.clearTimeout(hizalamaZamani);
       geriDugme?.removeEventListener("click", kapat);
@@ -337,11 +440,7 @@ export function BmoSahne() {
 
   return (
     <>
-      <div
-        className="bmo-iz"
-        ref={izRef}
-        style={{ height: `${(SAYFALAR.length + 1) * 100}vh` }}
-      >
+      <div className="bmo-iz" ref={izRef}>
         <div className="bmo-sahne">
           <div className="bmo-oda">
             <div

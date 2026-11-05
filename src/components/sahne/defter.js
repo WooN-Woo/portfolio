@@ -11,7 +11,7 @@ import { addOutline, canvasTexture, toon } from './bmoCekirdek';
 
 // ---------------------------------------------------------------- ölçüler
 /** Açık defterin tek sayfası. */
-const SAYFA = { en: 1.05, boy: 1.35 };
+export const SAYFA = { en: 1.05, boy: 1.35 };
 /** Defterin dikeyden geriye yatma açısı — sayfalar karşıdan okunsun diye. */
 const YATIKLIK = THREE.MathUtils.degToRad(27);
 /** Sehpanın masadaki yeri. */
@@ -640,6 +640,15 @@ export function createDefter({ scene, renderer, projeler, kapak }) {
     };
   }
 
+  /**
+   * Bir sayfanın dünya koordinatındaki ortası. Telefonda kamera tek sayfaya
+   * odaklandığı için gerekiyor. taraf: -1 sol sayfa, +1 sağ sayfa.
+   */
+  function sayfaMerkezi(taraf) {
+    kitap.updateWorldMatrix(true, false);
+    return kitap.localToWorld(new THREE.Vector3((taraf * SAYFA.en) / 2, 0, 0.02));
+  }
+
   function dispose() {
     scene.remove(kok);
     kok.traverse((o) => {
@@ -652,5 +661,12 @@ export function createDefter({ scene, renderer, projeler, kapak }) {
     });
   }
 
-  return { setIlerleme, kartusYeri, acilimSayisi: toplam, dispose };
+  return {
+    setIlerleme,
+    kartusYeri,
+    sayfaMerkezi,
+    acilimSayisi: toplam,
+    durumSayisi: DURUM_SAYISI,
+    dispose,
+  };
 }
